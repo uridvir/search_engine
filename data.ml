@@ -63,18 +63,20 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
    * association lists. *)
   (* AF: TODO: document the abstraction function.
    * RI: TODO: document any representation invariants. *)
-  type t = unit
+  type t = (Key.t * Value.t) list
 
-  let rep_ok d =
-    raise Unimplemented
+  (*TODO: properly implement rep_ok*)
+  let rep_ok d = d
 
-  let empty = raise Unimplemented
+  let empty : t = []
 
-  let is_empty d =
-    raise Unimplemented
+  let is_empty d = (d = [])
 
   let size d =
-    raise Unimplemented
+    if rep_ok d then
+      List.length d
+    else
+      failwith "An exception should have already been thrown, dumbass."
 
   let insert k v d =
     raise Unimplemented
