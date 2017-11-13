@@ -91,8 +91,8 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
     in
     List.filter condition d
 
-  let find k d  =
-    
+  let find k d =
+    raise Unimplemented
 
   let member k d =
     raise Unimplemented
