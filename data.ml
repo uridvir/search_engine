@@ -109,7 +109,7 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
     raise Unimplemented
 
   let to_list d =
-    raise Unimplemented
+    List.sort (fun a b -> let k, _ = a in let k1, _ = b in k - k1) d
 
   let fold f init d =
     raise Unimplemented
