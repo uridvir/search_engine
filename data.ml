@@ -78,8 +78,10 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
     else
       failwith "An exception should have already been thrown, dumbass."
 
+  (*Inserts value v with key k into dictionary d and returns resulting dictionary*)
   let insert k v d =
-    raise Unimplemented
+    let clean_dictionary = remove k d in (*Removes all previous keys bound to k*)
+    d @ [(k, v)]
 
   let remove k d =
     raise Unimplemented
