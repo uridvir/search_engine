@@ -71,7 +71,7 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
   (* Creates an empty list of type t *)
   let empty : t = []
 
-  let is_empty d = (d = [])
+  let is_empty d : bool= (d = [])
 
   let size d =
     if rep_ok d then
@@ -94,8 +94,14 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
   let find k d =
     raise Unimplemented
 
-  let member k d =
-    raise Unimplemented
+  let member k d : bool =
+    let condition a =
+      let k1, _ = a in
+      (k1 = k)
+    in
+    if (is_empty (List.filter condition d))
+      then false
+    else true
 
   let choose d =
     raise Unimplemented
