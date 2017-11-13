@@ -82,7 +82,7 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
   (*Inserts value v with key k into dictionary d and returns resulting dictionary*)
   let insert k v d =
     let clean_dictionary = remove k d in (*Removes all previous keys bound to k*)
-    d @ [(k, v)]
+    d @ [(k, v)] (*Returns appended dictionary*)
 
   and remove k d =
     let condition a =
