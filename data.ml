@@ -85,10 +85,14 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
     d @ [(k, v)]
 
   and remove k d =
-    raise Unimplemented
+    let condition a =
+      let k1, _ = a in
+      (k1 != k)
+    in
+    List.filter condition d
 
   let find k d =
-    raise Unimplemented
+    
 
   let member k d =
     raise Unimplemented
