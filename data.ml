@@ -65,9 +65,10 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
    * RI: TODO: document any representation invariants. *)
   type t = (Key.t * Value.t) list
 
-  (*TODO: properly implement rep_ok*)
+  (* Makes sure this dictionary is valid *)
   let rep_ok d = d
 
+  (* Creates an empty list of type t *)
   let empty : t = []
 
   let is_empty d = (d = [])
@@ -81,7 +82,7 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
   let insert k v d =
     raise Unimplemented
 
-  let remove k d =
+  and remove k d =
     raise Unimplemented
 
   let find k d =
