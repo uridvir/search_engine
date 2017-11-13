@@ -92,7 +92,15 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
     List.filter condition d
 
   let find k d =
-    raise Unimplemented
+    if member k d then
+      let condition a =
+        let k1, _ = a in
+        (k1 = k)
+      in
+      let _, v = List.find (fun a -> let k1, _ = a in (k1 = k)) d in 
+      Some v
+    else
+      None
 
   let member k d =
     raise Unimplemented
