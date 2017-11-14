@@ -117,8 +117,9 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
   and member k d : bool =
     List.exists (fun a -> let k1, _ = a in Key.compare k k1 = 'EQ) d
 
-  let choose d =
-    raise Unimplemented
+  (* Takes in a dictionary, returns the first element if it isn't empty *)
+  let choose d : (Key.t * value) option =
+    if is_empty d then None else Some List.head d
 
   (*
   Since d is already an association list, it just sorts it. The anonymous function sorts the keys, and the sort function utilizes the anonymous function to sort the association list.
