@@ -92,7 +92,15 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
     List.filter condition d
 
   let find k d =
-    raise Unimplemented
+    if member k d then
+      let condition a =
+        let k1, _ = a in
+        (k1 = k)
+      in
+      let _, v = List.find (fun a -> let k1, _ = a in (k1 = k)) d in 
+      Some v
+    else
+      None
 
   let member k d : bool =
     let condition a =
@@ -108,7 +116,7 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
     if is_empty d then None else Some List.head d
 
   let to_list d =
-    raise Unimplemented
+    List.sort (fun a b -> let k, _ = a in let k1, _ = b in k - k1) d
 
   let fold f init d =
     raise Unimplemented
