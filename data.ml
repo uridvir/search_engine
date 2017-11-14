@@ -63,59 +63,68 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
    * association lists. *)
   (* AF: TODO: document the abstraction function.
    * RI: TODO: document any representation invariants. *)
+
+  (*
+  The dictionary type, essentially an association list (a list of tuples). Each tuple contains a key (of type Key.t), and a value (of type Value.t).
+  *)
   type t = (Key.t * Value.t) list
 
-  (* Makes sure this dictionary is valid *)
-  let rep_ok d = d
+  (*Makes sure this dictionary is valid. Is currently IMPROPERLY IMPLEMENTED and performs no checks.*)
+  let rep_ok d : t = d
 
-  (* Creates an empty list of type t *)
+  (*A variable representing an empty list of type t *)
   let empty : t = []
 
-  let is_empty d : bool= (d = [])
+  (*Checks if a dictionary d is empty by comparing to the empty variable.*)
+  let is_empty d : bool = (d = empty)
 
-  let size d =
+  (*Runs rep_ok and then returns the number of key-value pairs in the dictionary. It does this by getting the length of the list of tuples.*)
+  let size d : int =
     if rep_ok d then
       List.length d
     else
       failwith "An exception should have already been thrown, dumbass."
 
-  (*Inserts value v with key k into dictionary d and returns resulting dictionary*)
-  let insert k v d =
-    let clean_dictionary = remove k d in (*Removes all previous keys bound to k*)
-    d @ [(k, v)] (*Returns appended dictionary*)
+  (*
+  Inserts value v with key k into dictionary d and returns resulting dictionary. First, uses remove function to remove all previous keys bound to k Finally, appends tuple of the key
+  and value inputted to the dictionary.
+  *)
+  let insert k v d : t =
+    let clean_dictionary = remove k d in
+    d @ [(k, v)]
 
-  and remove k d =
-    let condition a =
-      let k1, _ = a in
-      (k1 != k)
-    in
-    List.filter condition d
+  (*
+  Removes all values bound to key k from dictionary. The anonymous function checks if the key of 'a' (k1) does not equal k. The filter function returns a new dictionary of only the
+  keys that do NOT equal k (and their associated values).
+  *)
+  and remove k d : t =
+    List.filter (fun a -> let k1, _ = a in Key.compare k k1 != 'EQ) d 
 
-  let find k d =
+  (*
+  Finds the value bound to the key k in dictionary. First it checks that the key is in the dictionary. If not, it returns None. Otherwise: The anonymous function here checks if the key
+  of the tuple equals k.
+  *)
+  let find k d : Key.t * Value.t =
     if member k d then
-      let condition a =
-        let k1, _ = a in
-        (k1 = k)
-      in
-      let _, v = List.find (fun a -> let k1, _ = a in (k1 = k)) d in 
+      let _, v = List.find (fun a -> let k1, _ = a in Key.compare k k1 = 'EQ) d in 
       Some v
     else
       None
 
-  let member k d : bool =
-    let condition a =
-      let k1, _ = a in
-      (k1 = k)
-    in
-    if (is_empty (List.filter condition d))
-      then false
-    else true
+  (*
+  Finds if key k is bound in dictionary. The anonymous function checks if the key of 'a' (k1) equals k. The exists function checks if any pair satisfies the condition.
+  *)
+  and member k d : bool =
+    List.exists (fun a -> let k1, _ = a in Key.compare k k1 = 'EQ) d
 
   let choose d =
     raise Unimplemented
 
-  let to_list d =
-    List.sort (fun a b -> let k, _ = a in let k1, _ = b in k - k1) d
+  (*
+  Since d is already an association list, it just sorts it. The anonymous function sorts the keys, and the sort function utilizes the anonymous function to sort the association list.
+  *)
+  let to_list d : t =
+    List.sort (fun a b -> let k, _ = a and k1, _ = b in match Key.compare k k1 with | 'LT -> -1 | 'EQ -> 0 | 'GT -> 1) d
 
   let fold f init d =
     raise Unimplemented
