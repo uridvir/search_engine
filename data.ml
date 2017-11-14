@@ -127,8 +127,14 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
   let to_list d : t =
     List.sort (fun a b -> let k, _ = a and k1, _ = b in match Key.compare k k1 with | 'LT -> -1 | 'EQ -> 0 | 'GT -> 1) d
 
-  let fold f init d =
-    raise Unimplemented
+  let fold (f: (Key.t -> Value.t -> 'acc -> 'acc)) (init: 'acc) (d: t) : 'acc =
+    let rec loop (dictionary: t)(init: 'acc) : 'acc =
+      match dictionary with
+      | (k, v) :: [] -> f k v init
+      | (k, v) :: d -> loop d (f k v init)
+      | [] -> failwith "List should never be empty"
+    in
+    loop d init
 
   let expose_tree d =
     failwith "not a 2-3 tree"
