@@ -67,7 +67,7 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
   (*
   The dictionary type, essentially an association list (a list of tuples). Each tuple contains a key (of type Key.t), and a value (of type Value.t).
   *)
-  type t = (Key.t * Value.t) list
+  type t = (key * value) list
 
   (*Makes sure this dictionary is valid. Is currently IMPROPERLY IMPLEMENTED and performs no checks.*)
   let rep_ok d : t = d
@@ -104,7 +104,7 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
   Finds the value bound to the key k in dictionary. First it checks that the key is in the dictionary. If not, it returns None. Otherwise: The anonymous function here checks if the key
   of the tuple equals k.
   *)
-  let find k d : Key.t * Value.t =
+  let find k d : key * value =
     if member k d then
       let _, v = List.find (fun a -> let k1, _ = a in Key.compare k k1 = 'EQ) d in 
       Some v
@@ -118,7 +118,7 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
     List.exists (fun a -> let k1, _ = a in Key.compare k k1 = 'EQ) d
 
   (* Takes in a dictionary, returns the first element if it isn't empty *)
-  let choose d : (Key.t * value) option =
+  let choose d : (key * value) option =
     if is_empty d then None else Some List.head d
 
   (*
@@ -127,14 +127,8 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
   let to_list d : t =
     List.sort (fun a b -> let k, _ = a and k1, _ = b in match Key.compare k k1 with | 'LT -> -1 | 'EQ -> 0 | 'GT -> 1) d
 
-  let fold (f: (Key.t -> Value.t -> 'acc -> 'acc)) (init: 'acc) (d: t) : 'acc =
-    let rec loop (dictionary: t)(init: 'acc) : 'acc =
-      match dictionary with
-      | (k, v) :: [] -> f k v init
-      | (k, v) :: d -> loop d (f k v init)
-      | [] -> failwith "List should never be empty"
-    in
-    loop d init
+  let fold (f: (key -> value-> 'acc -> 'acc)) (init: 'acc) (d: t) : 'acc =
+    List.fold_left (fun init a -> let (key, value) = a in f key value init) init d
 
   let expose_tree d =
     failwith "not a 2-3 tree"
