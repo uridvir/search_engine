@@ -103,8 +103,9 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
       then false
     else true
 
-  let choose d =
-    raise Unimplemented
+  (* Takes in a dictionary, returns the first element if it isn't empty *)
+  let choose d : (Key.t * value) option =
+    if is_empty d then None else Some List.head d
 
   let to_list d =
     raise Unimplemented
