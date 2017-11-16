@@ -98,7 +98,7 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
   keys that do NOT equal k (and their associated values).
   *)
   and remove k d : t =
-    List.filter (fun a -> let k1, _ = a in Key.compare k k1 != 'EQ) d 
+    List.filter (fun a -> let k1, _ = a in Key.compare k k1 != `EQ) d 
 
   (*
   Finds the value bound to the key k in dictionary. First it checks that the key is in the dictionary. If not, it returns None. Otherwise: The anonymous function here checks if the key
@@ -106,7 +106,7 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
   *)
   let find k d : key * value =
     if member k d then
-      let _, v = List.find (fun a -> let k1, _ = a in Key.compare k k1 = 'EQ) d in 
+      let _, v = List.find (fun a -> let k1, _ = a in Key.compare k k1 = `EQ) d in 
       Some v
     else
       None
@@ -115,7 +115,7 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
   Finds if key k is bound in dictionary. The anonymous function checks if the key of 'a' (k1) equals k. The exists function checks if any pair satisfies the condition.
   *)
   and member k d : bool =
-    List.exists (fun a -> let k1, _ = a in Key.compare k k1 = 'EQ) d
+    List.exists (fun a -> let k1, _ = a in Key.compare k k1 = `EQ) d
 
   (* Takes in a dictionary, returns the first element if it isn't empty *)
   let choose d : (key * value) option =
@@ -125,7 +125,7 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
   Since d is already an association list, it just sorts it. The anonymous function sorts the keys, and the sort function utilizes the anonymous function to sort the association list.
   *)
   let to_list d : t =
-    List.sort (fun a b -> let k, _ = a and k1, _ = b in match Key.compare k k1 with | 'LT -> -1 | 'EQ -> 0 | 'GT -> 1) d
+    List.sort (fun a b -> let k, _ = a and k1, _ = b in match Key.compare k k1 with | `LT -> -1 | `EQ -> 0 | `GT -> 1) d
 
   let fold (f: (key -> value-> 'acc -> 'acc)) (init: 'acc) (d: t) : 'acc =
     List.fold_left (fun init a -> let (key, value) = a in f key value init) init d
