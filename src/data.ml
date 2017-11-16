@@ -80,10 +80,17 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
 
   (*Runs rep_ok and then returns the number of key-value pairs in the dictionary. It does this by getting the length of the list of tuples.*)
   let size d : int =
-    if rep_ok d then
+    if rep_ok d = d then
       List.length d
     else
       failwith "An exception should have already been thrown, dumbass."
+
+  (*
+  Removes all values bound to key k from dictionary. The anonymous function checks if the key of 'a' (k1) does not equal k. The filter function returns a new dictionary of only the
+  keys that do NOT equal k (and their associated values).
+  *)
+  let remove k d : t =
+    List.filter (fun a -> let k1, _ = a in Key.compare k k1 != `EQ) d 
 
   (*
   Inserts value v with key k into dictionary d and returns resulting dictionary. First, uses remove function to remove all previous keys bound to k Finally, appends tuple of the key
@@ -94,32 +101,25 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
     d @ [(k, v)]
 
   (*
-  Removes all values bound to key k from dictionary. The anonymous function checks if the key of 'a' (k1) does not equal k. The filter function returns a new dictionary of only the
-  keys that do NOT equal k (and their associated values).
+  Finds if key k is bound in dictionary. The anonymous function checks if the key of 'a' (k1) equals k. The exists function checks if any pair satisfies the condition.
   *)
-  and remove k d : t =
-    List.filter (fun a -> let k1, _ = a in Key.compare k k1 != `EQ) d 
+  let member k d : bool =
+    List.exists (fun a -> let k1, _ = a in Key.compare k k1 = `EQ) d
 
   (*
   Finds the value bound to the key k in dictionary. First it checks that the key is in the dictionary. If not, it returns None. Otherwise: The anonymous function here checks if the key
   of the tuple equals k.
   *)
-  let find k d : key * value =
+  let find k d : value option =
     if member k d then
       let _, v = List.find (fun a -> let k1, _ = a in Key.compare k k1 = `EQ) d in 
       Some v
     else
       None
 
-  (*
-  Finds if key k is bound in dictionary. The anonymous function checks if the key of 'a' (k1) equals k. The exists function checks if any pair satisfies the condition.
-  *)
-  and member k d : bool =
-    List.exists (fun a -> let k1, _ = a in Key.compare k k1 = `EQ) d
-
   (* Takes in a dictionary, returns the first element if it isn't empty *)
   let choose d : (key * value) option =
-    if is_empty d then None else Some List.head d
+    if is_empty d then None else Some (List.hd d) (*AVI PORATH Y U USE HEAD INSTEAD OF HD???*)
 
   (*
   Since d is already an association list, it just sorts it. The anonymous function sorts the keys, and the sort function utilizes the anonymous function to sort the association list.
