@@ -97,7 +97,7 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
   and value inputted to the dictionary.
   *)
   let insert k v d : t =
-    let clean_dictionary = remove k d in
+    let d = remove k d in
     d @ [(k, v)]
 
   (*
@@ -119,7 +119,7 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
 
   (* Takes in a dictionary, returns the first element if it isn't empty *)
   let choose d : (key * value) option =
-    if is_empty d then None else Some (List.hd d) (*AVI PORATH Y U USE HEAD INSTEAD OF HD???*)
+    if is_empty d then None else Some (List.hd d)
 
   (*
   Since d is already an association list, it just sorts it. The anonymous function sorts the keys, and the sort function utilizes the anonymous function to sort the association list.

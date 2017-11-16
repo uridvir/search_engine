@@ -31,22 +31,22 @@ module DictTester (M: DictionaryMaker) = struct
 	let not_bar = "BAR"
 	let tests =
 		[
+		"empty"		>:: (fun _ -> assert TestDictionary.(empty |> to_list = []));
 	  	"is_empty" 	>:: (fun _ -> assert TestDictionary.(is_empty empty));
+	  	"insert"	>:: (fun _ -> assert TestDictionary.(empty |> insert foo bar |> to_list = [(foo, bar)]));
+	  	"insert2"	>:: (fun _ -> assert TestDictionary.(empty |> insert foo bar |> insert foo not_bar |> to_list = [(foo, not_bar)]));
 	  	"size" 		>:: (fun _ -> assert TestDictionary.(size empty = 0));
-	  	"insert" 	>:: (fun _ -> assert TestDictionary.(empty |> insert foo bar |> size = 1));
-	  	"insert2"	>:: (fun _ -> assert TestDictionary.(empty |> insert foo bar |> insert foo not_bar |> size = 1));
+	  	"size2" 	>:: (fun _ -> assert TestDictionary.(empty |> insert foo bar |> size = 1));
 	  	"member" 	>:: (fun _ -> assert TestDictionary.(empty |> insert foo bar |> member foo));
 	  	"member2"	>:: (fun _ -> assert TestDictionary.(empty |> insert not_foo not_bar |> member foo = false));
 	  	"find" 		>:: (fun _ -> assert TestDictionary.(empty |> insert foo bar |> find foo = Some bar));
 	  	"find2" 	>:: (fun _ -> assert TestDictionary.(empty |> find not_foo = None));
 	  	"remove" 	>:: (fun _ -> assert TestDictionary.(empty |> insert foo bar |> remove foo = empty));
-	  	"remove2"	>:: (fun _ -> assert TestDictionary.((empty |> insert foo bar |> insert not_foo not_bar |> remove not_foo) = (empty |> insert foo bar)));
+	  	"remove2"	>:: (fun _ -> assert TestDictionary.(empty |> insert foo bar |> insert not_foo not_bar |> remove not_foo |> to_list = [(foo, bar)]));
 	  	"choose" 	>:: (fun _ -> assert TestDictionary.(empty |> insert foo bar |> choose = Some (foo, bar)));
 	  	"choose2"	>:: (fun _ -> assert TestDictionary.(empty |> insert foo bar |> insert not_foo not_bar |> choose = Some (foo, bar)));
 	  	"fold" 		>:: (fun _ -> assert TestDictionary.(empty |> insert foo bar |> fold (fun k v init -> k + String.length v + init) 0 = 3));
 	  	"fold2" 	>:: (fun _ -> assert TestDictionary.(empty |> insert not_foo not_bar |> fold (fun k v init -> k + String.length v + init) 0 = 4));
-	  	"to_list" 	>:: (fun _ -> assert TestDictionary.(empty |> insert foo bar |> to_list = [(foo, bar)]));
-		"to_list2"	>:: (fun _ -> assert TestDictionary.(empty |> to_list = []));
 		]
 end
 
