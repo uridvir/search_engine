@@ -2,6 +2,8 @@ open OUnit2
 open Data
 open Printf
 
+exception Fine
+
 module type Tests = sig
   val tests : OUnit2.test list
 end
@@ -31,6 +33,17 @@ let not_bar = "BAR"
  * to find buggy implementations. *)
 module DictTester (M: DictionaryMaker) = struct
 	module D = M(IntKey)(StringValue)
+
+	let type_test _ =
+		assert (
+			try 
+				ignore D.(empty |> expose_tree);
+				raise Fine
+			with
+			  Failure "not a 2-3 tree" -> true (*If it fails with this message, D is a MakeListDictionary. (This behavior is normal.)*)
+			| Fine -> true (*Everything's FINE... (This means that D is a MakeTreeDictionary.)*)
+			| _ -> false (*If anything else happens, behavior is undefined*) 
+		)
 
 	let empty_test _ =
 		assert D.(empty |> to_list = []);
@@ -97,6 +110,7 @@ module DictTester (M: DictionaryMaker) = struct
 
 	let tests =
 		[
+			"type"		>:: type_test;
 			"empty" 	>:: empty_test;
 			"insert" 	>:: insert_test;
 			"remove" 	>:: remove_test;
