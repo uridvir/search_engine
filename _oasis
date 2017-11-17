@@ -1,0 +1,16 @@
+Name: SearchEngine
+Version: 0.1
+Synopsis: A search engine for CSII.
+Authors: Uri Dvir <uri.j.dvir@gmail.com>, Avi Porath <19aporath@gannacademy.org>
+License: MIT with OCaml linking exception
+Description: A search engine.
+Homepage: https://github.com/uridvir/search_engine
+OASISFormat: 0.4
+BuildTools: ocamlbuild
+Plugins: META (0.4), DevFiles (0.4)
+Executable "test_main"
+  Path: src
+  MainIS: test_main.ml
+  CompiledObject: byte
+  BuildDepends:
+    oUnit
