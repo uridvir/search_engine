@@ -1,3 +1,6 @@
+open Data
+open Printf
+
 exception Unimplemented
 
 module type Engine = sig
@@ -45,6 +48,10 @@ end
 
 module StringKey = struct
   type t = string
+  let compare a b =
+    if String.compare a b < 0 then `LT
+    else if String.compare a b = 0 then `EQ
+    else `GT 
   let format fmt s =
     Format.fprintf fmt "%s" s
 end
@@ -52,7 +59,7 @@ end
 module StringListValue = struct
   type t = string list
   let format fmt slst =
-    List.iter (Format.fprintf "%s ") slst
+    List.iter (Format.fprintf fmt "%s ") slst
 end
 
 module IndexListDictionary = MakeListDictionary(StringKey)(StringListValue)
@@ -62,19 +69,50 @@ module ListEngine = struct
   type idx = IndexListDictionary.t
 
   let index_of_dir dir =
-    let files = Sys.readdir dir |> to_list in
-    (*TODO: Write code*)
+    Printf.printf "dir = %s" dir;
+    let files = Sys.readdir dir |> Array.to_list in
 
-  let to_list index = index
+    let process_file init file =
+      let filename = dir ^ "/" ^ file in
+      let _in = open_in filename in
+      let n = in_channel_length _in in
+      let text = Bytes.create n in
+      let _ = input _in text 0 n in
+      let text = Bytes.unsafe_to_string text in
+      close_in _in;
+
+      let format = ".,\"':;!" in
+      let text = String.map (fun (c: char) -> if String.contains format c then ' ' else c) text in
+      let words = List.filter (fun str -> not (str = "")) (String.split_on_char ' ' text) in
+
+      let add_to_index index word =
+        match (index |> IndexListDictionary.find word) with
+        | Some files ->
+          if List.exists (fun a -> not (a = file)) files then
+            index |> IndexListDictionary.insert word (files @ [file])
+          else
+            index
+        | None -> index |> IndexListDictionary.insert word [file]
+      in
+
+      List.fold_left add_to_index init words
+    in
+
+    List.fold_left process_file IndexListDictionary.empty files
+
+  let to_list index = index |> IndexListDictionary.to_list
 
   let or_not index ors nots =
+    (*
     if (List.exists (List.exists (fun a -> let word, _ = a in List.exists (fun b -> word = b) ors) index) then
       if (* Index does not contain Nots *) then
         (* List of new Index *)
       else
       []
     else
-      [] 
+      []
+    *)
+    raise Unimplemented
 
   let and_not index ands nots =
     raise Unimplemented
