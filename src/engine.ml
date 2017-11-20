@@ -43,7 +43,26 @@ struct
   let format fmt idx = ()
 end
 
-module ListEngine = TrivialEngine
+module ListEngine = struct
+
+  type idx = (string * string list) list
+
+  let index_of_dir dir =
+    raise Unimplemented
+
+  let to_list index =
+    raise Unimplemented
+
+  let or_not index ors nots =
+    raise Unimplemented
+
+  let and_not index ands nots =
+    raise Unimplemented
+
+  let format fmt index =
+    raise Unimplemented
+
+end
 (* TODO: replace [TrivialEngine] in the line above with
    an application of [MakeEngine] to some appropriate parameters. *)
 
