@@ -50,11 +50,16 @@ module ListEngine = struct
   let index_of_dir dir =
     raise Unimplemented
 
-  let to_list index =
-    raise Unimplemented
+  let to_list index = index
 
   let or_not index ors nots =
-    raise Unimplemented
+    if (List.exists (List.exists (fun a -> let word, _ = a in List.exists (fun b -> word = b) ors) index) then
+      if (* Index does not contain Nots *) then
+        (* List of new Index *)
+      else
+      []
+    else
+      [] 
 
   let and_not index ands nots =
     raise Unimplemented
