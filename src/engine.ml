@@ -43,12 +43,27 @@ struct
   let format fmt idx = ()
 end
 
+module StringKey = struct
+  type t = string
+  let format fmt s =
+    Format.fprintf fmt "%s" s
+end
+
+module StringListValue = struct
+  type t = string list
+  let format fmt slst =
+    List.iter (Format.fprintf "%s ") slst
+end
+
+module IndexListDictionary = MakeListDictionary(StringKey)(StringListValue)
+
 module ListEngine = struct
 
-  type idx = (string * string list) list
+  type idx = IndexListDictionary.t
 
   let index_of_dir dir =
-    raise Unimplemented
+    let files = Sys.readdir dir |> to_list in
+    (*TODO: Write code*)
 
   let to_list index =
     raise Unimplemented
