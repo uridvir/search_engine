@@ -11,10 +11,16 @@ let and_not_test _ =
 	and result = ListEngine.(index_of_dir (Sys.getcwd () ^ "/../../src/test") |> and_not ["Hello"; "World"] ["foo"; "bar"]) in
 	assert (result = expected)
 
+let or_not_test _ =
+	let expected = ["helloworld.txt"]
+	and result = ListEngine.(index_of_dir (Sys.getcwd () ^ "/../../src/test") |> or_not ["Hello"; "darkness"; "my"; "old"; "friend"] ["foo"; "bar"]) in
+	assert (result = expected)
+
 let tests = 
 	[
 		"index_of_dir" 	>:: index_of_dir_test;
 		"and_not"		>:: and_not_test;
+		"or_not"		>:: or_not_test;
 	]
 
 (* DO NOT call OUnit2.run_test_tt_main from here.  It must

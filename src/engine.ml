@@ -103,16 +103,31 @@ module ListEngine = struct
   let to_list index = D.(index |> to_list)
 
   let or_not ors nots index =
-    (*
-    if (List.exists (List.exists (fun a -> let word, _ = a in List.exists (fun b -> word = b) ors) index) then
-      if (* Index does not contain Nots *) then
-        (* List of new Index *)
-      else
-      []
-    else
-      []
-    *)
-    raise Unimplemented
+    (*check if lst contains item a*)
+      let contains a lst = List.exists (fun b -> a = b) lst in
+      
+      (*index as association list*)
+      let index_list = D.(index |> to_list) in
+
+      (*find all the files in the index*)
+      let files =
+        let f : (string list -> string -> string list) = (fun init a -> if init |> contains a then init else init @ [a]) in
+        let g : (string list -> string * string list -> string list) = (fun init a -> let _, files = a in List.fold_left f init files) in
+        List.fold_left g [] index_list
+      in
+
+      (*filter files out that don't have all and words*)
+      let files =
+        let f : (string -> string -> bool) = (fun a b -> match D.(index |> find b) with 
+          | Some files -> files |> contains a 
+          | None -> false
+        ) in
+        List.filter (fun a -> List.exists (f a) ors) files
+      in
+
+      (*filters files out that have any not words*)
+      let f : (string -> string -> bool) = (fun a b -> match D.(index |> find b) with | Some files -> not (files |> contains a) | None -> true) in
+      List.filter (fun a -> List.for_all (f a) nots) files
 
   (*
    * and_not
