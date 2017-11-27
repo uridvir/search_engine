@@ -23,12 +23,12 @@ module type Engine = sig
   (* [or_not idx ors nots] is a list of the files that contain
    * any of the words in [ors] and none of the words in [nots].
    * requires: [ors] is not empty. *)
-  val or_not  : idx -> string list -> string list -> string list
+  val or_not  : string list -> string list -> idx -> string list
 
   (* [and_not idx ands nots] is a list of the files that contain
    * all of the words in [ands] and none of the words in [nots].
    * requires: [ands] is not empty. *)
-  val and_not : idx -> string list -> string list -> string list
+  val and_not : string list -> string list -> idx -> string list
 
   (* [format] is a printing function suitable for use
    * with the toplevel's [#install_printer] directive.

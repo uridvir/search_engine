@@ -7,8 +7,8 @@ module type Engine = sig
   type idx
   val index_of_dir : string -> idx
   val to_list : idx -> (string * string list) list
-  val or_not  : idx -> string list -> string list -> string list
-  val and_not : idx -> string list -> string list -> string list
+  val or_not  : string list -> string list -> idx -> string list
+  val and_not : string list -> string list -> idx -> string list
   val format : Format.formatter -> idx -> unit
 end
 
@@ -26,10 +26,10 @@ struct
   let to_list idx =
     raise Unimplemented
 
-  let or_not idx ors nots =
+  let or_not ors nots idx =
     raise Unimplemented
 
-  let and_not idx ands nots =
+  let and_not ands nots idx =
     raise Unimplemented
 
   let format fmt idx =
@@ -41,8 +41,8 @@ struct
   type idx = unit
   let index_of_dir d = ()
   let to_list idx = []
-  let or_not idx ors nots = []
-  let and_not idx ands nots = []
+  let or_not ors nots idx = []
+  let and_not ands nots idx = []
   let format fmt idx = ()
 end
 
@@ -92,7 +92,7 @@ module ListEngine = struct
             D.(index |> insert word (files @ [file]))
           else
             index
-        | None -> d.(index |> insert word [file])
+        | None -> D.(index |> insert word [file])
       in
 
       List.fold_left add_to_index init words
@@ -102,7 +102,7 @@ module ListEngine = struct
 
   let to_list index = D.(index |> to_list)
 
-  let or_not index ors nots =
+  let or_not ors nots index =
     (*
     if (List.exists (List.exists (fun a -> let word, _ = a in List.exists (fun b -> word = b) ors) index) then
       if (* Index does not contain Nots *) then
@@ -152,7 +152,7 @@ module ListEngine = struct
    *
    * 4) Return list of files
    *)
-  let and_not index ands nots =
+  let and_not ands nots index =
       (*check if lst contains item a*)
       let contains a lst = List.exists (fun b -> a = b) lst in
       
@@ -161,8 +161,8 @@ module ListEngine = struct
 
       (*find all the files in the index*)
       let files =
-        let f : (string list -> string -> string list) = (fun init a -> if init |> contains a then init else init @ [a])
-        and g : (string list -> string * string list -> string list) = (fun init a -> let _, files = a in List.fold_left f init files) in
+        let f : (string list -> string -> string list) = (fun init a -> if init |> contains a then init else init @ [a]) in
+        let g : (string list -> string * string list -> string list) = (fun init a -> let _, files = a in List.fold_left f init files) in
         List.fold_left g [] index_list
       in
 
@@ -174,7 +174,7 @@ module ListEngine = struct
 
       (*filters files out that have any not words*)
       let f : (string -> string -> bool) = (fun a b -> match D.(index |> find b) with | Some files -> not (files |> contains a) | None -> true) in
-      List.filter (fun a -> if List.for_all (f a) nots) files
+      List.filter (fun a -> List.for_all (f a) nots) files
 
   let format fmt index =
     raise Unimplemented
