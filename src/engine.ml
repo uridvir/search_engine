@@ -62,11 +62,11 @@ module StringListValue = struct
     List.iter (Format.fprintf fmt "%s ") slst
 end
 
-module IndexListDictionary = MakeListDictionary(StringKey)(StringListValue)
+module D = MakeListDictionary(StringKey)(StringListValue)
 
 module ListEngine = struct
 
-  type idx = IndexListDictionary.t
+  type idx = D.t
 
   let index_of_dir dir =
     Printf.printf "dir = %s" dir;
@@ -86,21 +86,21 @@ module ListEngine = struct
       let words = List.filter (fun str -> not (str = "")) (String.split_on_char ' ' text) in
 
       let add_to_index index word =
-        match (index |> IndexListDictionary.find word) with
+        match D.(index |> find word) with
         | Some files ->
           if List.exists (fun a -> not (a = file)) files then
-            index |> IndexListDictionary.insert word (files @ [file])
+            D.(index |> insert word (files @ [file]))
           else
             index
-        | None -> index |> IndexListDictionary.insert word [file]
+        | None -> d.(index |> insert word [file])
       in
 
       List.fold_left add_to_index init words
     in
 
-    List.fold_left process_file IndexListDictionary.empty files
+    List.fold_left process_file D.empty files
 
-  let to_list index = index |> IndexListDictionary.to_list
+  let to_list index = D.(index |> to_list)
 
   let or_not index ors nots =
     (*
@@ -114,8 +114,67 @@ module ListEngine = struct
     *)
     raise Unimplemented
 
+  (*
+   * and_not
+   * 
+   * Arguments:
+   * 
+   * Returns: All files in index that have all words in ands and none of the
+   * words in nots.
+   * 
+   * Algorithm:
+   * 
+   * 1) Get a list of all the files
+   *    1a) Create a list of files, starting off empty
+   *    1b) For all words in index
+   *        1ba) For all files the word appears in
+   *              1baa) Is that file on the list of files (step 1a)?
+   *                    1baaa) Yes: no action
+   *                    1baab) No: add file to list of files (step 1aa)
+   * 
+   * 2) For each word in ands
+   *    2a) Is word in index?
+   *        2aa) Yes: proceed
+   *        2ab) No: whole function returns empty list
+   *    2b) For each file in list (step 1)
+   *        2ba) Is that file on the list of files where word was found?
+   *              2baa) Yes: Keep file
+   *              2bab) No: Remove file
+   *
+   * 3) For each word in nots
+   *    2a) Is word in index?
+   *        2aa) Yes: Proceed
+   *        2ab) No: skip this one
+   *    3a) For each file in list (step 1)
+   *        3aa) Is that file on the list of files where word was found?
+   *              3aaa) Yes: Remove file
+   *              3aab) No: Keep file
+   *
+   * 4) Return list of files
+   *)
   let and_not index ands nots =
-    raise Unimplemented
+      (*check if lst contains item a*)
+      let contains a lst = List.exists (fun b -> a = b) lst in
+      
+      (*index as association list*)
+      let index_list = D.(index |> to_list) in
+
+      (*find all the files in the index*)
+      let files =
+        let f : (string list -> string -> string list) = (fun init a -> if init |> contains a then init else init @ [a])
+        and g : (string list -> string * string list -> string list) = (fun init a -> let _, files = a in List.fold_left f init files) in
+        List.fold_left g [] index_list
+      in
+
+      (*filter files out that don't have all and words*)
+      let files =
+        let f : (string -> string -> bool) = (fun a b -> match D.(index |> find b) with | Some files -> files |> contains a | None -> false) in
+        List.filter (fun a -> List.for_all (f a) ands) files
+      in
+
+      (*filters files out that have any not words*)
+      let f : (string -> string -> bool) = (fun a b -> match D.(index |> find b) with | Some files -> not (files |> contains a) | None -> true) in
+      List.filter (fun a -> if List.for_all (f a) nots) files
 
   let format fmt index =
     raise Unimplemented
