@@ -148,6 +148,7 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
 
   type t = (key, value) tree23
 
+  (*TODO: Uri, code this*)
   let rep_ok d =
     raise Unimplemented
 
@@ -156,30 +157,38 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
   let is_empty d =
     d = Leaf
 
+  (*TODO: Avi, code this*)
   let size d =
     raise Unimplemented
 
+  (*TODO: Uri, code this*)
   let insert k v d =
     raise Unimplemented
 
+  (*TODO: Uri, code this*)
   let remove k d =
     raise Unimplemented
 
+  (*TODO: Avi, code this*)
   let find k d =
     raise Unimplemented
 
+  (*TODO: Avi, code this*)
   let member k d =
     raise Unimplemented
 
+  (*TODO: Avi, code this*)
   let choose d =
     raise Unimplemented
 
+  (*TODO: Uri, code this*)
   let to_list d =
     raise Unimplemented
 
   let expose_tree d =
     d
 
+  (*TODO: Uri, code this*)
   let fold f init d =
     raise Unimplemented
 
