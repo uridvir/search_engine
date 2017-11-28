@@ -13,19 +13,21 @@ end
 
 type ('k,'v) tree23 =
   | Leaf
-  | Twonode of ('k,'v) twonode
-  | Threenode of ('k,'v) threenode
+  | Twonode of ('k, 'v) twonode
+  | Threenode of ('k, 'v) threenode
+
 and ('k,'v) twonode = {
   left2  : ('k,'v) tree23;
   value  : 'k * 'v;
   right2 : ('k,'v) tree23;
 }
+
 and ('k,'v) threenode = {
-  left3   : ('k,'v) tree23;
+  left3   : ('k, 'v) tree23;
   lvalue  : 'k * 'v;
-  middle3 : ('k,'v) tree23;
+  middle3 : ('k, 'v) tree23;
   rvalue  : 'k * 'v;
-  right3  : ('k,'v) tree23;
+  right3  : ('k, 'v) tree23;
 }
 
 module type Dictionary = sig
@@ -144,15 +146,15 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
   type key = K.t
   type value = V.t
 
-  type t = (key,value) tree23
+  type t = (key, value) tree23
 
   let rep_ok d =
     raise Unimplemented
 
-  let empty = raise Unimplemented
+  let empty = Leaf
 
   let is_empty d =
-    raise Unimplemented
+    d = Leaf
 
   let size d =
     raise Unimplemented

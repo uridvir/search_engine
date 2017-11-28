@@ -42,17 +42,17 @@ end
  * RI: The conjunction of the RIs for [twonode] and [threenode]. *)
 type ('k,'v) tree23 =
   | Leaf
-  | Twonode of ('k,'v) twonode
-  | Threenode of ('k,'v) threenode
+  | Twonode of ('k, 'v) twonode
+  | Threenode of ('k, 'v) threenode
 
 (* RI: All keys in [left2] are strictly less than [fst value].
  *     All keys in [right2] are stricly greater than [fst value].
  *     The length of all paths from here to all leafs in [left2] and [right2]
  *     is the same. *)
 and ('k,'v) twonode = {
-  left2  : ('k,'v) tree23;
+  left2  : ('k, 'v) tree23;
   value  : 'k * 'v;
-  right2 : ('k,'v) tree23;
+  right2 : ('k, 'v) tree23;
 }
 
 (* RI: All keys in [left2] are strictly less than [fst lvalue].
@@ -62,11 +62,11 @@ and ('k,'v) twonode = {
  *     The length of all paths from here to all leafs in [left2], [middle2]
  *     and [right2] is the same. *)
 and ('k,'v) threenode = {
-  left3   : ('k,'v) tree23;
+  left3   : ('k, 'v) tree23;
   lvalue  : 'k * 'v;
-  middle3 : ('k,'v) tree23;
+  middle3 : ('k, 'v) tree23;
   rvalue  : 'k * 'v;
-  right3  : ('k,'v) tree23;
+  right3  : ('k, 'v) tree23;
 }
 
 (* A [Dictionary] maps keys to values. The keys
