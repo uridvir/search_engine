@@ -167,7 +167,7 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
    * I found out how to pattern match these 2-3 trees, it's like this. For example, a match on a Twonode might look like:
    *
    *    match d with
-   *    | {left2 = left; value = (k1, v1); right2 = right} when left != Leaf && right != Leaf
+   *    | {left2 = left; value = (k1, v1); right2 = right} when left != Leaf && right != Leaf -> *something*
    *
    * The idea is that a pattern match for a record is supposed to look like declaring a record. (Relevant Stack Overflow question: 
    * https://stackoverflow.com/questions/17173690/record-type-pattern-matching-in-ocaml) The when keyword is something I found out about
