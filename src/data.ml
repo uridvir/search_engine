@@ -17,9 +17,9 @@ type ('k,'v) tree23 =
   | Threenode of ('k, 'v) threenode
 
 and ('k,'v) twonode = {
-  left2  : ('k,'v) tree23;
+  left2  : ('k, 'v) tree23;
   value  : 'k * 'v;
-  right2 : ('k,'v) tree23;
+  right2 : ('k, 'v) tree23;
 }
 
 and ('k,'v) threenode = {
@@ -161,10 +161,58 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
   let size d =
     raise Unimplemented
 
+  (*
+   * AVI PLEASE READ:
+   * 
+   * I found out how to pattern match these 2-3 trees, it's like this. For example, a match on a Twonode might look like:
+   *
+   *    match d with
+   *    | {left2 = left; value = (k1, v1); right2 = right} when left != Leaf && right != Leaf
+   *
+   * The idea is that a pattern match for a record is supposed to look like declaring a record. (Relevant Stack Overflow question: 
+   * https://stackoverflow.com/questions/17173690/record-type-pattern-matching-in-ocaml) The when keyword is something I found out about
+   * looking at the OCaml documentation (I won't bore you with that): you just throw it at the end of a pattern match case and the match will
+   * only complete if the condition is true. Here, I check if both left and right aren't leaves.
+   *
+   * Hope it was helpful.
+   *)
+
   (*TODO: Uri, code this*)
   let insert k v d =
+    (* Commented out to allow code to compile. TODO: Finish
+    let rec climb k v d =
+      match d with
+      (*two node with two node child on the left being filled*)
+      | {left2 = {left2 = Leaf; value = (k2, v2); right2 = Leaf}; value = (k1, v2); right2 = right} when Key.compare k k1 = `LT && Key.compare k k2 = `LT ->
+          {left2 = {left3 = Leaf; lvalue = (k, v); middle3 = Leaf; rvalue = (k2, v2); right3 = Leaf}; value2 = (k1, v2); right2 = right}
+      | {left2 = {left2 = Leaf; value = (k2, v2); right2 = Leaf}; value = (k1, v2); right2 = right} when Key.compare k k1 = `LT && Key.compare k k2 != `LT ->
+          {left2 = {left3 = Leaf; lvalue = (k2, v2); middle3 = Leaf; rvalue = (k, v); right3 = Leaf}; value2 = (k1, v2); right2 = right}
+      (*two node with two node child on the right being filled*)
+      | Twonode {left; (k1, v2); Twonode {Leaf; (k2, v2); Leaf}} when Key.compare k k1 != `LT && Key.compare k k2 = `LT ->
+          Twonode {left; (k1, v2); Threenode {Leaf; (k, v); Leaf; (k2, v2); Leaf}}
+      | Twonode {left; (k1, v2); Twonode {Leaf; (k2, v2); Leaf}} when Key.compare k k1 != `LT && Key.compare k k2 != `LT ->
+          Twonode {left; (k1, v2); Threenode {Leaf; (k2, v2); Leaf; (k, v); Leaf}}
+      (*two node with child on the left to explore*)
+      | Twonode {left; (k1, v1); right} when Key.compare k k1 = `LT && left != Leaf ->
+          Twonode {climb k v left; (k1, v1); right}
+      (*two node with child on the right to explore*)
+      | Twonode {left; (k1, v1); right} when Key.compare k k1 != `LT && right != Leaf -> 
+          Twonode {left; (k1, v1); climb k v right}
+      (*three node with child on the left to explore*)
+      | Threenode {left; (k1, v1); middle; (k2, v2); right} when Key.compare k k1 = `LT ->
+          Threenode {climb k v left; (k1, v1); middle; (k2, v2); right}
+      (*three node with child in the middle to explore*)
+      | Threenode {left; (k1, v1); middle; (k2, v2); right} when Key.compare k k2 = `LT -> 
+          Threenode {left; (k1, v1); climb k v middle; (k2, v2); right}
+      (*three node with child on the right to explore*)
+      | Threenode {left; (k1, v1); middle; (k2, v2); right} when Key.compare k k2 != `LT -> 
+          Threenode {left; (k1, v1); middle; (k2, v2); climb k v right}
+      (*"I want to explore your child." Sounds like something a pedophile would say...*)
+    in 
+    climb k v d
+    *)
     raise Unimplemented
-
+          
   (*TODO: Uri, code this*)
   let remove k d =
     raise Unimplemented
