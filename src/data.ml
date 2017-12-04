@@ -159,7 +159,11 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
 
   (*TODO: Avi, code this*)
   let size d =
-    raise Unimplemented
+    let rec _size = function
+      | Leaf -> 0
+      | Twonode {left2 = left; value = _; right2 = right} -> 1 + _size left + _size right
+      | Threenode {left3 = left; lvalue = _; middle3 = middle; rvalue = _; right3 = right} -> 2 + _size left + _size middle + _size right
+    in _size d
 
   (*
    * AVI PLEASE READ:
@@ -176,6 +180,19 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
    *
    * Hope it was helpful.
    *)
+
+   (*TODO: Uri, code this*)
+  let to_list d =
+    let rec descend d = match d with
+      | Leaf -> []
+      | Twonode {left2 = left; value = (k1, v1); right2 = right} ->
+          [(k1, v1)] @ (descend left) @ (descend right)
+      | Threenode {left3 = left; lvalue = (k1, v1); middle3 = middle; rvalue = (k2, v2); right3 = right} ->
+          [(k1, v1); (k2, v2)] @ (descend left) @ (descend middle) @ (descend right)
+    in
+
+    let unsorted = descend d in
+    List.sort (fun a b -> let k1, _ = a and k2, _ = b in match (Key.compare k1 k2) with | `LT -> -1 | `EQ -> failwith "No two keys should be equal" | `GT -> 1) unsorted
 
   (*TODO: Uri, code this*)
   let insert k v d =
@@ -251,9 +268,6 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
             }
       
       (*three node to fill on the right (three node parent)*)
-      (*
-      k1 = 1, k2 = 2, left = Leaf, middle = Leaf, k3 = 3, k4 = 4
-      *)
       | Threenode {left3 = left; lvalue = (k1, v1); middle3 = middle; rvalue = (k2, v2); 
         right3 = Threenode {left3 = Leaf; lvalue = (k3, v3); middle3 = Leaf; rvalue = (k4, v4); right3 = Leaf}} when Key.compare k k1 != `LT && Key.compare k k2 != `LT ->
           let (first, second, last) = sort_three (k, v) (k3, v3) (k4, v4) in
@@ -302,35 +316,47 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
       | Leaf -> Twonode {left2 = Leaf; value = (k, v); right2 = Leaf}
 
       (*"I want to explore your child." Sounds like something a pedophile would say...*)
-    in
-    descend k v d
-          
-  (*TODO: Uri, code this*)
+    in descend k v d
+    (*TODO: Make insert function remove previous bindings of k*)
+
+   (*TODO: Uri, code this*)
   let remove k d =
-    raise Unimplemented
+    d |> to_list |> List.filter (fun a -> let k1, _ = a in Key.compare k k1 != `EQ) |> 
+    List.fold_left (fun init a -> let k1, v1 = a in init |> insert k1 v1) empty
 
   (*TODO: Avi, code this*)
   let find k d =
-    raise Unimplemented
+    let rec descend d = match d with
+      | Leaf -> None
+      | Twonode {left2 = left; value = (k1, v1); right2 = right} ->
+          if Key.compare k k1 = `LT then descend left
+          else if Key.compare k k1 = `EQ then Some v1
+          else descend right
+      | Threenode {left3 = left; lvalue = (k1, v1); middle3 = middle; rvalue = (k2, v2); right3 = right} ->
+          if Key.compare k k1 = `LT then descend left
+          else if Key.compare k k1 = `EQ then Some v1
+          else if Key.compare k k2 = `LT then descend middle
+          else if Key.compare k k2 = `EQ then Some v2
+          else descend right
+    in descend d 
 
   (*TODO: Avi, code this*)
   let member k d =
-    raise Unimplemented
+    match (find k d) with | Some v -> true | None -> false
 
   (*TODO: Avi, code this*)
   let choose d =
-    raise Unimplemented
-
-  (*TODO: Uri, code this*)
-  let to_list d =
-    raise Unimplemented
+    match d with
+      | Twonode {left2 = _; value = (k, v); right2 = _} -> Some (k, v)
+      | Threenode {left3 = _; lvalue = (k, v); middle3 = _; rvalue = _; right3 = _} -> Some (k, v)
+      | Leaf -> None 
 
   let expose_tree d =
     d
 
   (*TODO: Uri, code this*)
   let fold f init d =
-    raise Unimplemented
+    List.fold_left (fun init a -> let (k, v) = a in f k v init) init (to_list d)
 
   let format fmt d =
     Format.fprintf fmt "<abstr>" (* TODO: improve if you wish *)
@@ -357,51 +383,61 @@ module type Set = sig
   val format : Format.formatter -> t -> unit
 end
 
+module NullValue = struct
+  type t = unit
+  let format fmt s = failwith "Trying to format null value"
+end
+
 module MakeSetOfDictionary (C : Comparable) (DM:DictionaryMaker) = struct
   module Elt = C
   type elt = Elt.t
 
   (* TODO: change type [t] to something involving a dictionary *)
-  type t = unit
+  module D = DM(C)(NullValue)
+  type t = D.t
 
   let rep_ok s =
     raise Unimplemented
 
   let empty =
-    raise Unimplemented
+    D.empty
 
   let is_empty s =
-    raise Unimplemented
+    D.(s |> is_empty)
 
   let size s =
-    raise Unimplemented
+    D.(s |> size)
 
   let insert x s =
-    raise Unimplemented
+    D.(s |> insert x ())
 
   let member x s =
-    raise Unimplemented
+    D.(s |> member x)
 
   let remove x s =
-    raise Unimplemented
+    D.(s |> remove x)
 
   let choose s =
-    raise Unimplemented
+    match D.(s |> choose) with
+    | Some (x, _) -> Some x
+    | None -> None
 
   let fold f init s =
-    raise Unimplemented
-
-  let union s1 s2 =
-    raise Unimplemented
-
-  let intersect s1 s2 =
-    raise Unimplemented
-
-  let difference s1 s2 =
-    raise Unimplemented
+    List.fold_left (fun init a -> let x, _ = a in f x init) init D.(s |> to_list)
 
   let to_list s =
-    raise Unimplemented
+    let lst = D.(s |> to_list) in
+    let (xs, _) = List.split lst in
+    xs
+
+  let union s1 s2 =
+    D.(s1 |> to_list |> List.fold_left (fun init a -> let x, _ = a in init |> insert x ()) s2)
+
+  let intersect s1 s2 =
+    D.(s1 |> to_list |> List.fold_left (fun init a -> let x, _ = a in if s2 |> member x then init |> insert x () else init) empty)
+
+  let difference s1 s2 =
+    D.(s1 |> to_list |> List.fold_left (fun init a -> let x, _ = a in if not (s2 |> member x) then init |> insert x () else init) empty)
 
   let format fmt d =
     Format.fprintf fmt "<abstr>" (* TODO: improve if you wish *)
