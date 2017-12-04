@@ -128,7 +128,115 @@ end
 
 module ListDictionaryTester = DictTester(MakeListDictionary)
 
-let tests = ListDictionaryTester.tests
+module TreeDictionaryTester = struct
+	module D = MakeTreeDictionary(IntKey)(StringValue)
+
+	let verbose = true
+
+	let print_tree d =
+		let rec print_loop prev_indent indent = function
+			| Twonode {left2 = left; value = (k1, v1); right2 = right} ->
+				if indent = "|--" then
+					(print_loop (prev_indent ^ "|  ") "|  " left;
+					printf "%s|--%d\n" (prev_indent ^ indent) k1;
+		        	print_loop (prev_indent ^ "|  ") "|  " right;)
+		        else
+		        	(print_loop (prev_indent ^ indent) "|  " left;
+					printf "%s|--%d\n" (prev_indent ^ indent) k1;
+		        	print_loop (prev_indent ^ indent) "|  " right;)
+			| Threenode {left3 = left; lvalue = (k1, v1); middle3 = middle; rvalue = (k2, v2); right3 = right} ->
+				if indent = "|--" then
+					(print_loop (prev_indent ^ "|  ") "|  " left;
+					printf "%s|  %d\n" (prev_indent ^ "|  ") k1;
+					print_loop (prev_indent ^ indent) "|--" middle;
+					printf "%s|  %d\n" (prev_indent ^ "|  ") k2;
+					print_loop (prev_indent ^ "|  ") "|  " right;)
+				else
+					(print_loop (prev_indent ^ indent) "|  " left;
+					printf "%s|  %d\n" (prev_indent ^ indent) k1;
+					print_loop (prev_indent ^ indent) "|--" middle;
+					printf "%s|  %d\n" (prev_indent ^ indent) k2;
+					print_loop (prev_indent ^ indent) "|  " right;)
+			| Leaf -> printf "%s|--LEAF\n" (prev_indent ^ indent)
+		in
+		let print_start d = match d with
+			| Twonode {left2 = left; value = (k1, v1); right2 = right} ->
+				print_loop "" "   " left;
+				printf "%d--|\n" k1;
+				print_loop "" "   " right
+			| Threenode {left3 = left; lvalue = (k1, v1); middle3 = middle; rvalue = (k2, v2); right3 = right} ->
+				print_loop "" "   " left;
+				printf "%d  |\n" k1;
+				print_loop "" "|--" middle;
+				printf "%d  |\n" k2;
+				print_loop "" "   " right
+			| Leaf -> printf "LEAF\n" 
+		in
+		printf "\n"; print_start d
+
+	let print_tree_test _ =
+		print_tree
+		(
+			Twonode 
+			{
+				left2 = Twonode {left2 = Leaf; value = (1, ""); right2 = Leaf};
+				value = (2, "");
+				right2 = Threenode 
+				{
+					left3 = Leaf;
+					lvalue = (3, "");
+					middle3 = Threenode 
+						{
+							left3 = Leaf;
+							lvalue = (4, "");
+							middle3 = Leaf;
+							rvalue = (5, "");
+							right3 = Leaf
+						};
+					rvalue = (6, "");
+					right3 = Leaf;
+				}
+			}
+		)
+
+	let empty_test _ =
+		assert D.(empty |> expose_tree = Leaf)
+
+	let insert_test _ =
+		let result = D.(empty |> insert 1 "") in
+		if verbose then print_tree D.(result |> expose_tree);
+		assert D.(result |> expose_tree = Twonode {left2 = Leaf; value = (1, ""); right2 = Leaf});
+		let result = D.(result |> insert 2 "") in
+		if verbose then print_tree D.(result |> expose_tree);
+		assert D.(result |> expose_tree = Threenode {left3 = Leaf; lvalue = (1, ""); middle3 = Leaf; rvalue = (2, ""); right3 = Leaf});
+		let result = D.(result |> insert 3 "") in
+		if verbose then print_tree D.(result |> expose_tree);
+		(*TODO: Add assertion*)
+		let result = D.(result |> insert 4 "") in
+		if verbose then print_tree D.(result |> expose_tree);
+		(*TODO: Add assertion*)
+		let result = D.(result |> insert 5 "") in
+		if verbose then print_tree D.(result |> expose_tree);
+		(*TODO: Add assertion*)
+		let result = D.(result |> insert 6 "") in
+		if verbose then print_tree D.(result |> expose_tree);
+		(*TODO: Add assertion*)
+		let result = D.(result |> insert 7 "") in
+		if verbose then print_tree D.(result |> expose_tree);
+		(*TODO: Add assertion*)
+		let result = D.(result |> insert 8 "") in
+		if verbose then print_tree D.(result |> expose_tree);
+		(*TODO: Add assertion*)
+		assert true
+
+	let tests =
+		[
+			"empty" 	>:: empty_test;
+			"insert" 	>:: insert_test;
+		]
+end
+
+let tests = ListDictionaryTester.tests @ TreeDictionaryTester.tests
 
 (* DO NOT call OUnit2.run_test_tt_main from here.  It must
  * be called only in test_main.ml.  *)

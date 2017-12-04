@@ -100,7 +100,7 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
   *)
   let insert k v d : t =
     let d = remove k d in
-    d :: (k, v)
+    d @ [(k, v)]
 
   (*
   Finds if key k is bound in dictionary. The anonymous function checks if the key of 'a' (k1) equals k. The exists function checks if any pair satisfies the condition.
@@ -182,7 +182,7 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
     (*takes three key-value tuples and sorts them by key, returning a tuple of tuples*)
     let sort_three a b c =
       let (a, b, c) = match (List.sort (fun a b -> let k, _ = a and k1, _ = b in match Key.compare k k1 with | `LT -> -1 | `EQ -> 0 | `GT -> 1) [a; b; c]) with
-        | a :: b :: c -> (a, b, c)
+        | a :: b :: c :: [] -> (a, b, c)
         | _ -> failwith "Couldn't deconstruct list!" 
       in (a, b, c)
     in
@@ -192,15 +192,26 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
       | Twonode {left2 = Threenode {left3 = Leaf; lvalue = (k2, v2); middle3 = Leaf; rvalue = (k3, v3); right3 = Leaf}; 
         value = (k1, v1); right2 = right} when Key.compare k k1 = `LT ->
           let (first, second, last) = sort_three (k, v) (k2, v2) (k3, v3) in
-          Threenode {left3 = Twonode {left2 = Leaf; value = first; right2 = Leaf}; lvalue = second;
-          middle3 = Twonode {left2 = Leaf; value = last; right2 = Leaf}; rvalue = (k1, v1); right3 = right}
+          Threenode 
+          {
+            left3 = Twonode {left2 = Leaf; value = first; right2 = Leaf}; 
+            lvalue = second;
+            middle3 = Twonode {left2 = Leaf; value = last; right2 = Leaf}; 
+            rvalue = (k1, v1); 
+            right3 = right;
+          }
 
       (*three node to fill on the right (two node parent)*)
       | Twonode {left2 = left; value = (k1, v1); right2 = Threenode {left3 = Leaf; lvalue = (k2, v2); middle3 = Leaf; rvalue = (k3, v3); right3 = Leaf}} 
         when Key.compare k k1 != `LT ->
           let (first, second, last) = sort_three (k, v) (k2, v2) (k3, v3) in
-          Threenode {left3 = Twonode {left2 = Leaf; value = first; right2 = Leaf}; lvalue = second;
-          middle3 = Twonode {left2 = Leaf; value = last; right2 = Leaf}; rvalue = (k1, v1); right3 = right}
+          Threenode {
+            left3 = left;
+            lvalue = (k1, v1);
+            middle3 = Twonode {left2 = Leaf; value = first; right2 = Leaf};
+            rvalue = second;
+            right3 = Twonode {left2 = Leaf; value = last; right2 = Leaf};
+          }
 
       (*three node to fill on the left (three node parent)*)
       | Threenode {left3 = Threenode {left3 = Leaf; lvalue = (k3, v3); middle3 = Leaf; rvalue = (k4, v4); right3 = Leaf};
@@ -220,7 +231,7 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
 
       (*three node to fill in the middle (three node parent)*)
       | Threenode {left3 = left; lvalue = (k1, v1); middle3 = Threenode {left3 = Leaf; lvalue = (k3, v3); middle3 = Leaf; rvalue = (k4, v4); right3 = Leaf};
-        rvalue = (k2, v2); right3 = right} when Key.compare k k1 = `LT ->
+        rvalue = (k2, v2); right3 = right} when Key.compare k k1 != `LT && Key.compare k k2 = `LT ->
           let (first, second, last) = sort_three (k, v) (k3, v3) (k4, v4) in
           Twonode 
             {
@@ -240,17 +251,20 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
             }
       
       (*three node to fill on the right (three node parent)*)
+      (*
+      k1 = 1, k2 = 2, left = Leaf, middle = Leaf, k3 = 3, k4 = 4
+      *)
       | Threenode {left3 = left; lvalue = (k1, v1); middle3 = middle; rvalue = (k2, v2); 
-        right3 = Threenode {left3 = Leaf; lvalue = (k3, v3); middle3 = Leaf; rvalue = (k4, v4); right3 = Leaf}} when Key.compare k k1 = `LT ->
+        right3 = Threenode {left3 = Leaf; lvalue = (k3, v3); middle3 = Leaf; rvalue = (k4, v4); right3 = Leaf}} when Key.compare k k1 != `LT && Key.compare k k2 != `LT ->
           let (first, second, last) = sort_three (k, v) (k3, v3) (k4, v4) in
           Twonode 
             {
-              left2 = Twonode {left2 = left; value = second; right2 = middle};
+              left2 = Twonode {left2 = left; value = (k1, v1); right2 = middle};
               value = (k2, v2);
               right2 = Twonode 
                 {
                   left2 = Twonode {left2 = Leaf; value = first; right2 = Leaf};
-                  value = (k2, v2);
+                  value = second;
                   right2 = Twonode {left2 = Leaf; value = last; right2 = Leaf}
                 }
             }
@@ -260,7 +274,7 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
           if Key.compare k k1 = `LT then 
             Threenode {left3 = Leaf; lvalue = (k, v); middle3 = Leaf; rvalue = (k1, v1); right3 = Leaf}
           else 
-            {left3 = Leaf; lvalue = (k1, v1); middle3 = Leaf; rvalue = (k, v); right3 = Leaf}
+            Threenode {left3 = Leaf; lvalue = (k1, v1); middle3 = Leaf; rvalue = (k, v); right3 = Leaf}
       
       (*two node with child to explore*)
       | Twonode({left2 = left; value = (k1, v1); right2 = right} as node) ->
@@ -282,6 +296,8 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
           (*exlore right*)
           else if Key.compare k k2 != `LT then
             Threenode {node with right3 = descend k v right}
+          else
+            failwith "Key doesn't fit"
 
       | Leaf -> Twonode {left2 = Leaf; value = (k, v); right2 = Leaf}
 
