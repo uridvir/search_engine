@@ -231,8 +231,7 @@ module TreeDictionaryTester = struct
 
 	let to_list_test _ =
 		assert D.(empty |> to_list = []);
-		assert D.(empty |> insert 1 "" |> insert 2 "" |> to_list = [(1, ""); (2, "")]);
-		D.([(1, ""); (2, ""); (3, ""); (4, ""); (5, "")] |> List.fold_left (fun init a -> let k1, v1 = a in init |> insert k1 v1) empty |> expose_tree |> print_tree)
+		assert D.(empty |> insert 1 "" |> insert 2 "" |> to_list = [(1, ""); (2, "")])
 
 	let remove_test _ =
 		assert D.(empty |> insert foo bar |> remove foo |> to_list = []);
@@ -242,7 +241,7 @@ module TreeDictionaryTester = struct
 	let size_test _ =
 		assert D.(empty |> size = 0);
 		assert D.(empty |> insert foo bar |> size = 1);
-		(*assert D.(empty |> insert foo bar |> insert foo not_bar |> size = 1);*)
+		assert D.(empty |> insert foo bar |> insert foo not_bar |> size = 1);
 		assert D.(empty |> insert foo bar |> insert not_foo not_bar |> size = 2)
 
 	let member_test _ =
@@ -253,8 +252,8 @@ module TreeDictionaryTester = struct
 
 	let find_test _ =
 		assert D.(empty |> insert foo bar |> find foo = Some bar);
-		assert D.(empty |> insert foo bar |> find not_foo = None)
-		(*assert D.(empty |> insert foo bar |> insert foo not_bar |> find foo = Some not_bar)*)
+		assert D.(empty |> insert foo bar |> find not_foo = None);
+		assert D.(empty |> insert foo bar |> insert foo not_bar |> find foo = Some not_bar)
 
 	let choose_test _ =
 		assert D.(empty |> insert foo bar |> choose = Some (foo, bar));

@@ -157,7 +157,6 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
   let is_empty d =
     d = Leaf
 
-  (*TODO: Avi, code this*)
   let size d =
     let rec _size = function
       | Leaf -> 0
@@ -165,23 +164,6 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
       | Threenode {left3 = left; lvalue = _; middle3 = middle; rvalue = _; right3 = right} -> 2 + _size left + _size middle + _size right
     in _size d
 
-  (*
-   * AVI PLEASE READ:
-   * 
-   * I found out how to pattern match these 2-3 trees, it's like this. For example, a match on a Twonode might look like:
-   *
-   *    match d with
-   *    | Twonode {left2 = left; value = (k1, v1); right2 = right} when left != Leaf && right != Leaf -> *something*
-   *
-   * The idea is that a pattern match for a record is supposed to look like declaring a record. (Relevant Stack Overflow question: 
-   * https://stackoverflow.com/questions/17173690/record-type-pattern-matching-in-ocaml) The when keyword is something I found out about
-   * looking at the OCaml documentation (I won't bore you with that): you just throw it at the end of a pattern match case and the match will
-   * only complete if the condition is true. Here, I check if both left and right aren't leaves.
-   *
-   * Hope it was helpful.
-   *)
-
-   (*TODO: Uri, code this*)
   let to_list d =
     let rec descend d = match d with
       | Leaf -> []
@@ -194,7 +176,6 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
     let unsorted = descend d in
     List.sort (fun a b -> let k1, _ = a and k2, _ = b in match (Key.compare k1 k2) with | `LT -> -1 | `EQ -> failwith "No two keys should be equal" | `GT -> 1) unsorted
 
-  (*TODO: Uri, code this*)
   let insert k v d =
     (*takes three key-value tuples and sorts them by key, returning a tuple of tuples*)
     let sort_three a b c =
@@ -313,18 +294,18 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
           else
             failwith "Key doesn't fit"
 
+      (*empty tree to fill*)
       | Leaf -> Twonode {left2 = Leaf; value = (k, v); right2 = Leaf}
 
       (*"I want to explore your child." Sounds like something a pedophile would say...*)
-    in descend k v d
-    (*TODO: Make insert function remove previous bindings of k*)
+      
+    in d |> to_list |> List.filter (fun a -> let k1, _ = a in Key.compare k k1 != `EQ) |> 
+    List.fold_left (fun init a -> let k1, v1 = a in init |> descend k1 v1) empty |> descend k v
 
-   (*TODO: Uri, code this*)
   let remove k d =
     d |> to_list |> List.filter (fun a -> let k1, _ = a in Key.compare k k1 != `EQ) |> 
     List.fold_left (fun init a -> let k1, v1 = a in init |> insert k1 v1) empty
 
-  (*TODO: Avi, code this*)
   let find k d =
     let rec descend d = match d with
       | Leaf -> None
@@ -340,11 +321,9 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
           else descend right
     in descend d 
 
-  (*TODO: Avi, code this*)
   let member k d =
     match (find k d) with | Some v -> true | None -> false
 
-  (*TODO: Avi, code this*)
   let choose d =
     match d with
       | Twonode {left2 = _; value = (k, v); right2 = _} -> Some (k, v)
@@ -354,7 +333,6 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
   let expose_tree d =
     d
 
-  (*TODO: Uri, code this*)
   let fold f init d =
     List.fold_left (fun init a -> let (k, v) = a in f k v init) init (to_list d)
 
