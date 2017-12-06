@@ -47,7 +47,11 @@ module type Dictionary = sig
   val choose : t -> (key * value) option
   val fold : (key -> value -> 'acc -> 'acc) -> 'acc -> t -> 'acc
   val to_list : t -> (key * value) list
-  val expose_tree : t -> (key,value) tree23
+  (*Extension to spec:*)
+  val import_list : (key * value) list -> t
+  val expose_tree : t -> (key, value) tree23
+  (*Extension to spec:*)
+  val import_tree : (key, value) tree23 -> t
   val format : Format.formatter -> t -> unit
 end
 
@@ -72,47 +76,48 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
   type t = (key * value) list
 
   (*Makes sure this dictionary is valid. Is currently IMPROPERLY IMPLEMENTED and performs no checks.*)
-  let rep_ok d : t = d
+  let rep_ok d = d
 
   (*A variable representing an empty list of type t *)
-  let empty : t = []
+  let empty = []
 
   (*Checks if a dictionary d is empty by comparing to the empty variable.*)
-  let is_empty d : bool = (d = empty)
+  let is_empty d = let d = rep_ok d in (d = empty)
 
   (*Runs rep_ok and then returns the number of key-value pairs in the dictionary. It does this by getting the length of the list of tuples.*)
-  let size d : int =
-    if rep_ok d = d then
-      List.length d
-    else
-      failwith "An exception should have already been thrown, dumbass."
+  let size d =
+    let d = rep_ok d in 
+    List.length d
 
   (*
   Removes all values bound to key k from dictionary. The anonymous function checks if the key of 'a' (k1) does not equal k. The filter function returns a new dictionary of only the
   keys that do NOT equal k (and their associated values).
   *)
-  let remove k d : t =
+  let remove k d =
+    let d = rep_ok d in
     List.filter (fun a -> let k1, _ = a in Key.compare k k1 != `EQ) d 
 
   (*
   Inserts value v with key k into dictionary d and returns resulting dictionary. First, uses remove function to remove all previous keys bound to k Finally, appends tuple of the key
   and value inputted to the dictionary.
   *)
-  let insert k v d : t =
-    let d = remove k d in
+  let insert k v d =
+    let d = d |> rep_ok |> remove k in
     d @ [(k, v)]
 
   (*
   Finds if key k is bound in dictionary. The anonymous function checks if the key of 'a' (k1) equals k. The exists function checks if any pair satisfies the condition.
   *)
-  let member k d : bool =
+  let member k d =
+    let d = rep_ok d in
     List.exists (fun a -> let k1, _ = a in Key.compare k k1 = `EQ) d
 
   (*
   Finds the value bound to the key k in dictionary. First it checks that the key is in the dictionary. If not, it returns None. Otherwise: The anonymous function here checks if the key
   of the tuple equals k.
   *)
-  let find k d : value option =
+  let find k d =
+    let d = rep_ok d in 
     if member k d then
       let _, v = List.find (fun a -> let k1, _ = a in Key.compare k k1 = `EQ) d in 
       Some v
@@ -120,19 +125,27 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
       None
 
   (* Takes in a dictionary, returns the first element if it isn't empty *)
-  let choose d : (key * value) option =
+  let choose d =
+    let d = rep_ok d in
     if is_empty d then None else Some (List.hd d)
 
   (*
   Since d is already an association list, it just sorts it. The anonymous function sorts the keys, and the sort function utilizes the anonymous function to sort the association list.
   *)
-  let to_list d : t =
+  let to_list d =
+    let d = rep_ok d in
     List.sort (fun a b -> let k, _ = a and k1, _ = b in match Key.compare k k1 with | `LT -> -1 | `EQ -> 0 | `GT -> 1) d
 
-  let fold (f: (key -> value-> 'acc -> 'acc)) (init: 'acc) (d: t) : 'acc =
+  let import_list l = l
+
+  let fold f init d =
+    let d = rep_ok d in
     List.fold_left (fun init a -> let (key, value) = a in f key value init) init d
 
   let expose_tree d =
+    failwith "not a 2-3 tree"
+
+  let import_tree tree =
     failwith "not a 2-3 tree"
 
   let format fmt d =
@@ -167,21 +180,29 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
  
   let empty = Leaf
 
-  let is_empty d = (d = Leaf)
+  let is_empty d = let d = rep_ok d in (d = Leaf)
 
-  let rec size = function
+  let rec size d =
+    let d = rep_ok d in 
+    match d with
     | Leaf -> 0
     | Twonode {left2 = left; value = _; right2 = right} -> 1 + size left + size right
     | Threenode {left3 = left; lvalue = _; middle3 = middle; rvalue = _; right3 = right} -> 2 + size left + size middle + size right
 
-  let rec to_list = function
+  let rec to_list d =
+    let d = rep_ok d in
+    match d with
     | Leaf -> []
     | Twonode {left2 = left; value = (k1, v1); right2 = right} ->
         to_list left @ [(k1, v1)] @ to_list right
     | Threenode {left3 = left; lvalue = (k1, v1); middle3 = middle; rvalue = (k2, v2); right3 = right} ->
         to_list left @ [(k1, v1)] @ to_list middle @ [(k2, v2)] @ to_list right
 
+  let import_list l =
+    failwith "Not a list"
+
   let insert k v d =
+    let d = rep_ok d in 
     (*takes three key-value tuples and sorts them by key, returning a tuple of tuples*)
     let sort_three a b c =
       let (a, b, c) = match (List.sort (fun a b -> let k, _ = a and k1, _ = b in match Key.compare k k1 with | `LT -> -1 | `EQ -> 0 | `GT -> 1) [a; b; c]) with
@@ -308,10 +329,13 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
     List.fold_left (fun init a -> let k1, v1 = a in init |> descend k1 v1) empty |> descend k v
 
   let remove k d =
+    let d = rep_ok d in
     d |> to_list |> List.filter (fun a -> let k1, _ = a in Key.compare k k1 != `EQ) |> 
     List.fold_left (fun init a -> let k1, v1 = a in init |> insert k1 v1) empty
 
-  let rec find k = function
+  let rec find k d =
+    let d = rep_ok d in
+    match d with
     | Leaf -> None
     | Twonode {left2 = left; value = (k1, v1); right2 = right} ->
         if Key.compare k k1 = `LT then find k left
@@ -325,7 +349,8 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
         else find k right
 
   let member k d =
-    match (find k d) with | Some v -> true | None -> false
+    let d = rep_ok d in
+    match find k d with | Some v -> true | None -> false
 
   (* Sublime syntax highlighting freaks out if I type this:
    *
@@ -333,15 +358,20 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
    *
    * So for now, you must suffer... 
    *)
-  let choose d = match d with
+  let choose d = 
+    let d = rep_ok d in 
+    match d with
     | Twonode {left2 = _; value = (k, v); right2 = _} -> Some (k, v)
     | Threenode {left3 = _; lvalue = (k, v); middle3 = _; rvalue = _; right3 = _} -> Some (k, v)
     | Leaf -> None 
 
   let fold f init d =
+    let d = rep_ok d in
     List.fold_left (fun init a -> let (k, v) = a in f k v init) init (to_list d)
 
-  let expose_tree d = d
+  let expose_tree d = rep_ok d
+
+  let import_tree t = rep_ok t
 
   let format fmt d =
     Format.fprintf fmt "<abstr>" (* TODO: improve if you wish *)

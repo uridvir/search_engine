@@ -146,12 +146,22 @@ module type Dictionary = sig
    * in order from the least key to the greatest. *)
   val to_list : t -> (key * value) list
 
+  (* (This is an extension of the spec.) [import_list l] is
+   * a Dictionary representation of a pre-existing list.
+   * This is useful for debugging and unit testing. *)
+  val import_list : (key * value) list -> t
+
   (* [expose_tree d] is the 2-3 tree representing [d].  It's unusual
    * for a data abstraction to expose its representation like this,
    * but we do it for testing purposes, as described above.
    * raises: an unspecified exception if [d] was not created through
    *   [MakeTreeDictionary]. *)
   val expose_tree : t -> (key, value) tree23
+
+  (* (This is an extension of the spec.) [import_tree t] is
+   * a Dictionary representation of a pre-existing tree.
+   * This is useful for debugging and unit testing. *)
+  val import_tree : (key, value) tree23 -> t
 
   (* [format] is a printing function suitable for use
    * with the toplevel's [#install_printer] directive.
