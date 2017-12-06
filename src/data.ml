@@ -150,31 +150,51 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
 
   (*TODO: Uri, code this*)
   let rep_ok d =
-    raise Unimplemented
+    (*
+    type head =
+      | Decapitated
+      | Single of (key * value)
+      | Double of (key * value) * (key * value)
 
+    let head_of_tree d = match d with
+      | Twonode {left2 = left; value = (k, v); right2 = right} -> Single (k, v)
+      | Threenode {left3 = left; lvalue = (k1, v1); middle3 = middle; rvalue = (k2, v2); right3 = right} -> Double ((k1, v1), (k2, v2))
+      | Leaf -> Decapitated
+    in
+    match d with
+    | Twonode {left2 = left; value = (k, v); right2 = right} ->
+      (
+        match (head_of_tree left, head_of_tree right) with
+        | (Decapitated, Decapitated)
+        | (Decapitated, Single (k1, v1)) when Key.compare k1 k = `GT && rep_ok right
+        | (Decapitated, Double ((k1, v1), (k2, v2))) when Key.compare k1 k = `GT && Key.compare k2 k = `GT && rep_ok right
+        | (Single (k1, v1), Decapitated) when Key.compare k1 k = `LT && rep_ok left
+        | (Single (k1, v1), Single (k2, v2)) when Key.compare k1 k = `LT && Key.compare k2 k = `GT
+        | (Single (k1, v1), Double ((k2, v2), (k3, v3))) when Key.compare k1 k = `LT
+        | (Double ((k1, v1), (k2, v2)), Decapitated)
+        | (Double ((k1, v1), (k2, v2)), Single (k3, v3))
+        | (Double ((k1, v1), (k2, v2)), Double ((k3, v3), (k4, v4)))
+
+      )
+      *) 
+      raise Unimplemented 
+ 
   let empty = Leaf
 
   let is_empty d =
     d = Leaf
 
-  let size d =
-    let rec _size = function
-      | Leaf -> 0
-      | Twonode {left2 = left; value = _; right2 = right} -> 1 + _size left + _size right
-      | Threenode {left3 = left; lvalue = _; middle3 = middle; rvalue = _; right3 = right} -> 2 + _size left + _size middle + _size right
-    in _size d
+  let rec size = function
+    | Leaf -> 0
+    | Twonode {left2 = left; value = _; right2 = right} -> 1 + size left + size right
+    | Threenode {left3 = left; lvalue = _; middle3 = middle; rvalue = _; right3 = right} -> 2 + size left + size middle + size right
 
-  let to_list d =
-    let rec descend d = match d with
-      | Leaf -> []
-      | Twonode {left2 = left; value = (k1, v1); right2 = right} ->
-          [(k1, v1)] @ (descend left) @ (descend right)
-      | Threenode {left3 = left; lvalue = (k1, v1); middle3 = middle; rvalue = (k2, v2); right3 = right} ->
-          [(k1, v1); (k2, v2)] @ (descend left) @ (descend middle) @ (descend right)
-    in
-
-    let unsorted = descend d in
-    List.sort (fun a b -> let k1, _ = a and k2, _ = b in match (Key.compare k1 k2) with | `LT -> -1 | `EQ -> failwith "No two keys should be equal" | `GT -> 1) unsorted
+  let rec to_list = function
+    | Leaf -> []
+    | Twonode {left2 = left; value = (k1, v1); right2 = right} ->
+        to_list left @ [(k1, v1)] @ to_list right
+    | Threenode {left3 = left; lvalue = (k1, v1); middle3 = middle; rvalue = (k2, v2); right3 = right} ->
+        to_list left @ [(k1, v1)] @ to_list middle @ [(k2, v2)] @ to_list right
 
   let insert k v d =
     (*takes three key-value tuples and sorts them by key, returning a tuple of tuples*)
@@ -184,8 +204,7 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
         | _ -> failwith "Couldn't deconstruct list!" 
       in (a, b, c)
     in
-    let rec descend k v d =
-      match d with
+    let rec descend k v = function
       (*three node to fill on the left (two node parent)*)
       | Twonode {left2 = Threenode {left3 = Leaf; lvalue = (k2, v2); middle3 = Leaf; rvalue = (k3, v3); right3 = Leaf}; 
         value = (k1, v1); right2 = right} when Key.compare k k1 = `LT ->
@@ -298,7 +317,8 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
       | Leaf -> Twonode {left2 = Leaf; value = (k, v); right2 = Leaf}
 
       (*"I want to explore your child." Sounds like something a pedophile would say...*)
-      
+    
+    (*TODO: call remove function on previous bindings of k when remove is properly implemented*)  
     in d |> to_list |> List.filter (fun a -> let k1, _ = a in Key.compare k k1 != `EQ) |> 
     List.fold_left (fun init a -> let k1, v1 = a in init |> descend k1 v1) empty |> descend k v
 
@@ -306,35 +326,37 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
     d |> to_list |> List.filter (fun a -> let k1, _ = a in Key.compare k k1 != `EQ) |> 
     List.fold_left (fun init a -> let k1, v1 = a in init |> insert k1 v1) empty
 
-  let find k d =
-    let rec descend d = match d with
-      | Leaf -> None
-      | Twonode {left2 = left; value = (k1, v1); right2 = right} ->
-          if Key.compare k k1 = `LT then descend left
-          else if Key.compare k k1 = `EQ then Some v1
-          else descend right
-      | Threenode {left3 = left; lvalue = (k1, v1); middle3 = middle; rvalue = (k2, v2); right3 = right} ->
-          if Key.compare k k1 = `LT then descend left
-          else if Key.compare k k1 = `EQ then Some v1
-          else if Key.compare k k2 = `LT then descend middle
-          else if Key.compare k k2 = `EQ then Some v2
-          else descend right
-    in descend d 
+  let rec find k = function
+    | Leaf -> None
+    | Twonode {left2 = left; value = (k1, v1); right2 = right} ->
+        if Key.compare k k1 = `LT then find k left
+        else if Key.compare k k1 = `EQ then Some v1
+        else find k right
+    | Threenode {left3 = left; lvalue = (k1, v1); middle3 = middle; rvalue = (k2, v2); right3 = right} ->
+        if Key.compare k k1 = `LT then find k left
+        else if Key.compare k k1 = `EQ then Some v1
+        else if Key.compare k k2 = `LT then find k middle
+        else if Key.compare k k2 = `EQ then Some v2
+        else find k right
 
   let member k d =
     match (find k d) with | Some v -> true | None -> false
 
-  let choose d =
-    match d with
-      | Twonode {left2 = _; value = (k, v); right2 = _} -> Some (k, v)
-      | Threenode {left3 = _; lvalue = (k, v); middle3 = _; rvalue = _; right3 = _} -> Some (k, v)
-      | Leaf -> None 
-
-  let expose_tree d =
-    d
+  (* Sublime syntax highlighting freaks out if I type this:
+   *
+   * let choose d = function
+   *
+   * So for now, you must suffer... 
+   *)
+  let choose d = match d with
+    | Twonode {left2 = _; value = (k, v); right2 = _} -> Some (k, v)
+    | Threenode {left3 = _; lvalue = (k, v); middle3 = _; rvalue = _; right3 = _} -> Some (k, v)
+    | Leaf -> None 
 
   let fold f init d =
     List.fold_left (fun init a -> let (k, v) = a in f k v init) init (to_list d)
+
+  let expose_tree d = d
 
   let format fmt d =
     Format.fprintf fmt "<abstr>" (* TODO: improve if you wish *)
@@ -377,8 +399,7 @@ module MakeSetOfDictionary (C : Comparable) (DM:DictionaryMaker) = struct
   let rep_ok s =
     raise Unimplemented
 
-  let empty =
-    D.empty
+  let empty = D.empty
 
   let is_empty s =
     D.(s |> is_empty)
@@ -401,7 +422,7 @@ module MakeSetOfDictionary (C : Comparable) (DM:DictionaryMaker) = struct
     | None -> None
 
   let fold f init s =
-    List.fold_left (fun init a -> let x, _ = a in f x init) init D.(s |> to_list)
+    D.fold (fun x _ init -> f x init) init s
 
   let to_list s =
     let lst = D.(s |> to_list) in
@@ -409,13 +430,13 @@ module MakeSetOfDictionary (C : Comparable) (DM:DictionaryMaker) = struct
     xs
 
   let union s1 s2 =
-    D.(s1 |> to_list |> List.fold_left (fun init a -> let x, _ = a in init |> insert x ()) s2)
+    s1 |> fold (fun x init -> init |> insert x) s2
 
   let intersect s1 s2 =
-    D.(s1 |> to_list |> List.fold_left (fun init a -> let x, _ = a in if s2 |> member x then init |> insert x () else init) empty)
+    s1 |> fold (fun x init -> if s2 |> member x then init |> insert x else init) empty
 
   let difference s1 s2 =
-    D.(s1 |> to_list |> List.fold_left (fun init a -> let x, _ = a in if not (s2 |> member x) then init |> insert x () else init) empty)
+    s1 |> fold (fun x init -> if not (s2 |> member x) then init |> insert x else init) empty
 
   let format fmt d =
     Format.fprintf fmt "<abstr>" (* TODO: improve if you wish *)

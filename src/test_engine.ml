@@ -1,20 +1,25 @@
 open OUnit2
 open Engine
 
+let sanitize_directory dir =
+	String.escaped (String.map (fun c -> if c = ' ' then '\ ' else c) dir)
+
 module EngineTester (E: Engine) = struct
+	let sanitized_test_directory = sanitize_directory (Sys.getcwd () ^ "/../../src/test")
+
 	let index_of_dir_test _ =
 		let expected = [("Hello", ["helloworld.txt"]); ("World", ["helloworld.txt"])]
-		and result = E.(index_of_dir (Sys.getcwd () ^ "/../../src/test") |> to_list) in
+		and result = E.(index_of_dir sanitized_test_directory |> to_list) in
 		assert (result = expected)
 
 	let and_not_test _ =
 		let expected = ["helloworld.txt"]
-		and result = E.(index_of_dir (Sys.getcwd () ^ "/../../src/test") |> and_not ["Hello"; "World"] ["foo"; "bar"]) in
+		and result = E.(index_of_dir sanitized_test_directory |> and_not ["Hello"; "World"] ["foo"; "bar"]) in
 		assert (result = expected)
 
 	let or_not_test _ =
 		let expected = ["helloworld.txt"]
-		and result = E.(index_of_dir (Sys.getcwd () ^ "/../../src/test") |> or_not ["Hello"; "darkness"; "my"; "old"; "friend"] ["foo"; "bar"]) in
+		and result = E.(index_of_dir sanitized_test_directory |> or_not ["Hello"; "darkness"; "my"; "old"; "friend"] ["foo"; "bar"]) in
 		assert (result = expected)
 
 	let tests = 
