@@ -148,41 +148,26 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
 
   type t = (key, value) tree23
 
-  (*TODO: Uri, code this*)
-  let rep_ok d =
-    (*
-    type head =
-      | Decapitated
-      | Single of (key * value)
-      | Double of (key * value) * (key * value)
-
-    let head_of_tree d = match d with
-      | Twonode {left2 = left; value = (k, v); right2 = right} -> Single (k, v)
-      | Threenode {left3 = left; lvalue = (k1, v1); middle3 = middle; rvalue = (k2, v2); right3 = right} -> Double ((k1, v1), (k2, v2))
-      | Leaf -> Decapitated
+  let rec rep_ok d =
+    let branch t cmp k = 
+      match t with
+      | Leaf -> true
+      | Twonode {left2 = _; value = (k1, v1); right2 = _} when Key.compare k1 k = cmp -> true
+      | Threenode {left3 = _; lvalue = (k1, v1); middle3 = _; rvalue = (k2, v2); right3 = _} when Key.compare k1 k = cmp && Key.compare k2 k = cmp -> true
+      | _ -> false
     in
     match d with
-    | Twonode {left2 = left; value = (k, v); right2 = right} ->
-      (
-        match (head_of_tree left, head_of_tree right) with
-        | (Decapitated, Decapitated)
-        | (Decapitated, Single (k1, v1)) when Key.compare k1 k = `GT && rep_ok right
-        | (Decapitated, Double ((k1, v1), (k2, v2))) when Key.compare k1 k = `GT && Key.compare k2 k = `GT && rep_ok right
-        | (Single (k1, v1), Decapitated) when Key.compare k1 k = `LT && rep_ok left
-        | (Single (k1, v1), Single (k2, v2)) when Key.compare k1 k = `LT && Key.compare k2 k = `GT
-        | (Single (k1, v1), Double ((k2, v2), (k3, v3))) when Key.compare k1 k = `LT
-        | (Double ((k1, v1), (k2, v2)), Decapitated)
-        | (Double ((k1, v1), (k2, v2)), Single (k3, v3))
-        | (Double ((k1, v1), (k2, v2)), Double ((k3, v3), (k4, v4)))
-
-      )
-      *) 
-      raise Unimplemented 
+    | Leaf -> d
+    | Twonode {left2 = left; value = (k, v); right2 = right} when branch left `LT k && branch right `GT k &&
+      rep_ok left = left && rep_ok right = right -> d
+    | Threenode {left3 = left; lvalue = (k, v); middle3 = middle; rvalue = (k1, v1); right3 = right} when Key.compare k k1 = `LT &&
+      branch left `LT k && branch middle `GT k && branch middle `LT k1 && branch right `GT k1 && rep_ok left = left && rep_ok middle = middle &&
+      rep_ok right = right -> d
+    | _ -> failwith "Bad tree!"
  
   let empty = Leaf
 
-  let is_empty d =
-    d = Leaf
+  let is_empty d = (d = Leaf)
 
   let rec size = function
     | Leaf -> 0
