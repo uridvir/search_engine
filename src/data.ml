@@ -76,7 +76,16 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
   type t = (key * value) list
 
   (*Makes sure this dictionary is valid. Is currently IMPROPERLY IMPLEMENTED and performs no checks.*)
-  let rep_ok d = d
+  let rec rep_ok = function
+    | (h :: t) as d ->
+        let (k, _) = h in
+        if List.exists (fun a -> let (k1, _) = a in (k = k1)) t then
+          failwith "Bad list!"
+        else if rep_ok t = t then
+          d
+        else
+          failwith "Bad list!"
+    | [] -> []
 
   (*A variable representing an empty list of type t *)
   let empty = []
