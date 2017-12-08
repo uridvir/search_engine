@@ -298,12 +298,21 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
                 }
             }
 
-      (*two node to fill*)
+      (*terminal two node to fill*)
       | Twonode {left2 = Leaf; value = (k1, v1); right2 = Leaf} ->
           if Key.compare k k1 = `LT then 
             Threenode {left3 = Leaf; lvalue = (k, v); middle3 = Leaf; rvalue = (k1, v1); right3 = Leaf}
           else 
             Threenode {left3 = Leaf; lvalue = (k1, v1); middle3 = Leaf; rvalue = (k, v); right3 = Leaf}
+
+      (*terminal three node to fill*)
+      | Threenode {left3 = Leaf; lvalue = (k1, v1); middle3 = Leaf; rvalue = (k2, v2); right3 = Leaf} ->
+          let (first, second, last) = sort_three (k1, v1) (k2, v2) (k, v) in
+          Twonode {
+            left2 = Twonode {left2 = Leaf; value = first; right2 = Leaf};
+            value = second;
+            right2 = Twonode {left2 = Leaf; value = last; right2 = Leaf}
+          }
       
       (*two node with child to explore*)
       | Twonode({left2 = left; value = (k1, v1); right2 = right} as node) ->

@@ -161,7 +161,7 @@ module TreeDictionaryTester = DictTester(MakeTreeDictionary)
 module MoreTreeTests = struct
 	module D = MakeTreeDictionary(IntKey)(StringValue)
 
-	let verbose = false
+	let verbose = true
 
 	let type_test _ =
 		assert
