@@ -170,7 +170,14 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
 
   type t = (key, value) tree23
 
-  let rec rep_ok d =
+  let rep_ok d =
+    let rec all_lengths = function
+      | Twonode {left2 = left; value = _; right2 = right} ->
+          List.map (fun a -> a + 1) (all_lengths left @ all_lengths right)
+      | Threenode {left3 = left; lvalue = _; middle3 = middle; rvalue = _; right3 = right} ->
+          List.map (fun a -> a + 1) (all_lengths left @ all_lengths middle @ all_lengths right)
+      | Leaf -> [ 0 ]
+    in
     let branch t cmp k = 
       match t with
       | Leaf -> true
@@ -178,14 +185,31 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
       | Threenode {left3 = _; lvalue = (k1, v1); middle3 = _; rvalue = (k2, v2); right3 = _} when Key.compare k1 k = cmp && Key.compare k2 k = cmp -> true
       | _ -> false
     in
-    match d with
-    | Leaf -> d
-    | Twonode {left2 = left; value = (k, v); right2 = right} when branch left `LT k && branch right `GT k &&
-      rep_ok left = left && rep_ok right = right -> d
-    | Threenode {left3 = left; lvalue = (k, v); middle3 = middle; rvalue = (k1, v1); right3 = right} when Key.compare k k1 = `LT &&
-      branch left `LT k && branch middle `GT k && branch middle `LT k1 && branch right `GT k1 && rep_ok left = left && rep_ok middle = middle &&
-      rep_ok right = right -> d
-    | _ -> failwith "Bad tree!"
+    let rec final_check = function
+      | Leaf -> true
+      | Twonode {left2 = left; value = (k, v); right2 = right} when branch left `LT k && branch right `GT k &&
+        final_check left && final_check right -> true
+      | Threenode {left3 = left; lvalue = (k, v); middle3 = middle; rvalue = (k1, v1); right3 = right} when Key.compare k k1 = `LT &&
+        branch left `LT k && branch middle `GT k && branch middle `LT k1 && branch right `GT k1 && final_check left && final_check middle &&
+        final_check right -> true
+      | _ -> false
+    in
+    (*
+    let lengths = all_lengths d in
+    List.iter (fun i -> Printf.printf "%d " i) lengths;
+    Printf.printf "\n";
+    let first = List.hd lengths in
+    let rest = List.tl lengths in
+    if List.for_all (fun a -> (a = first)) rest then
+    *)
+      if final_check d then
+        d
+      else
+        failwith "Bad tree! Failed final_check"
+    (*
+    else
+      failwith "Bad tree! Failed all_lengths check"
+    *)
  
   let empty = Leaf
 

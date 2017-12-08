@@ -174,36 +174,71 @@ module MoreTreeTests = struct
 			| _ -> false
 		)
 
+	let rep_ok_test _ =
+		let badtrees =
+		[
+			Threenode 
+			{
+				left3 = Twonode 
+				{
+					left2 = Twonode {left2 = Leaf; value = (1, ""); right2 = Leaf};
+					value = (2, "");
+					right2 = Twonode {left2 = Leaf; value = (3, ""); right2 = Leaf};
+				};
+				lvalue = (4, "");
+				middle3 = Twonode {left2 = Leaf; value = (5, ""); right2 = Leaf};
+				rvalue = (6, "");
+				right3 = Twonode {left2 = Leaf; value = (7, ""); right2 = Leaf};
+			}
+		]
+		in
+		assert
+		(
+			List.for_all
+			(
+			fun d ->
+				try
+					ignore D.(d |> import_tree |> rep_ok);
+					raise Fine (*this should NOT be thrown, all the trees in this test are invalid*)
+				with
+				| Fine -> false
+				| Failure _ -> true
+				| _ -> false
+			)
+			badtrees
+		)
+
 	let insert_test _ =
-		let result = D.(empty |> insert 1 "") in
-		if verbose then print_tree D.(result |> expose_tree);
-		(*assert D.(result |> expose_tree = Twonode {left2 = Leaf; value = (1, ""); right2 = Leaf});*)
-		let result = D.(result |> insert 2 "") in
-		if verbose then print_tree D.(result |> expose_tree);
-		(*assert D.(result |> expose_tree = Threenode {left3 = Leaf; lvalue = (1, ""); middle3 = Leaf; rvalue = (2, ""); right3 = Leaf});*)
-		let result = D.(result |> insert 3 "") in
-		if verbose then print_tree D.(result |> expose_tree);
-		(*TODO: Add assertion*)
-		let result = D.(result |> insert 4 "") in
-		if verbose then print_tree D.(result |> expose_tree);
-		(*TODO: Add assertion*)
-		let result = D.(result |> insert 5 "") in
-		if verbose then print_tree D.(result |> expose_tree);
-		(*TODO: Add assertion*)
-		let result = D.(result |> insert 6 "") in
-		if verbose then print_tree D.(result |> expose_tree);
-		(*TODO: Add assertion*)
-		let result = D.(result |> insert 7 "") in
-		if verbose then print_tree D.(result |> expose_tree);
-		(*TODO: Add assertion*)
-		let result = D.(result |> insert 8 "") in
-		if verbose then print_tree D.(result |> expose_tree);
-		(*TODO: Add assertion*)
-		assert true
+		(*
+		let rec all_lengths d : int list = match d with
+      		| Twonode {left2 = left; value = _; right2 = right} ->
+          		List.map (fun a -> a + 1) (all_lengths left @ all_lengths right)
+      		| Threenode {left3 = left; lvalue = _; middle3 = middle; rvalue = _; right3 = right} ->
+          		List.map (fun a -> a + 1) (all_lengths left @ all_lengths middle @ all_lengths right)
+      		| Leaf -> [1]
+    	in
+    	let tree = Twonode 
+		{
+			left2 = Twonode {left2 = Leaf; value = (1, ""); right2 = Leaf};
+			value = (2, "");
+			right2 = Twonode {left2 = Leaf; value = (3, ""); right2 = Leaf};
+		}
+		in
+		let lengths = all_lengths tree in
+		List.iter (fun i -> Printf.printf "%d " i) lengths;
+    	Printf.printf "\n"
+    	*)
+    	
+		let hundred_nothing = List.init 100 (fun _ -> ()) in
+		Random.self_init ();
+		let result = List.fold_left (fun init _ -> let random = (Random.int 99) + 1 in let next = D.(init |> insert random "") in printf "\nInserting %d...\n" random; D.(next |> expose_tree |> print_tree); next) D.empty hundred_nothing in
+		if verbose then D.(result |> expose_tree |> print_tree);
+		assert D.(result |> rep_ok = result)
 
 	let tests =
 		[
 			"type"		>:: type_test;
+			"rep_ok"	>:: rep_ok_test;
 			"insert" 	>:: insert_test;
 		]
 
