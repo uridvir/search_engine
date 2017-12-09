@@ -194,22 +194,16 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
         final_check right -> true
       | _ -> false
     in
-    (*
     let lengths = all_lengths d in
-    List.iter (fun i -> Printf.printf "%d " i) lengths;
-    Printf.printf "\n";
     let first = List.hd lengths in
     let rest = List.tl lengths in
     if List.for_all (fun a -> (a = first)) rest then
-    *)
       if final_check d then
         d
       else
         failwith "Bad tree! Failed final_check"
-    (*
     else
       failwith "Bad tree! Failed all_lengths check"
-    *)
  
   let empty = Leaf
 
@@ -411,7 +405,7 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
     let d = rep_ok d in
     List.fold_left (fun init a -> let (k, v) = a in f k v init) init (to_list d)
 
-  let expose_tree d = rep_ok d
+  let expose_tree d = d
 
   let import_tree t = rep_ok t
 
