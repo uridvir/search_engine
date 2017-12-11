@@ -184,24 +184,24 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
     | Threenode {left3 = left; lvalue = _; middle3 = middle; rvalue = _; right3 = right} ->
         List.map (fun a -> a + 1) (all_lengths left @ all_lengths middle @ all_lengths right)
     | Leaf -> [0]
+    
+  let branch t cmp k = 
+    match t with
+    | Leaf -> true
+    | Twonode {left2 = _; value = (k1, v1); right2 = _} when Key.compare k1 k = cmp -> true
+    | Threenode {left3 = _; lvalue = (k1, v1); middle3 = _; rvalue = (k2, v2); right3 = _} when Key.compare k1 k = cmp && Key.compare k2 k = cmp -> true
+    | _ -> false
+
+  let rec order_check = function
+    | Leaf -> true
+    | Twonode {left2 = left; value = (k, v); right2 = right} when branch left `LT k && branch right `GT k &&
+      order_check left && order_check right -> true
+    | Threenode {left3 = left; lvalue = (k, v); middle3 = middle; rvalue = (k1, v1); right3 = right} when Key.compare k k1 = `LT &&
+      branch left `LT k && branch middle `GT k && branch middle `LT k1 && branch right `GT k1 && order_check left && order_check middle &&
+      order_check right -> true
+    | _ -> false
 
   let rep_ok d =
-    let branch t cmp k = 
-      match t with
-      | Leaf -> true
-      | Twonode {left2 = _; value = (k1, v1); right2 = _} when Key.compare k1 k = cmp -> true
-      | Threenode {left3 = _; lvalue = (k1, v1); middle3 = _; rvalue = (k2, v2); right3 = _} when Key.compare k1 k = cmp && Key.compare k2 k = cmp -> true
-      | _ -> false
-    in
-    let rec order_check = function
-      | Leaf -> true
-      | Twonode {left2 = left; value = (k, v); right2 = right} when branch left `LT k && branch right `GT k &&
-        order_check left && order_check right -> true
-      | Threenode {left3 = left; lvalue = (k, v); middle3 = middle; rvalue = (k1, v1); right3 = right} when Key.compare k k1 = `LT &&
-        branch left `LT k && branch middle `GT k && branch middle `LT k1 && branch right `GT k1 && order_check left && order_check middle &&
-        order_check right -> true
-      | _ -> false
-    in
     let lengths = all_lengths d in
     let first = List.hd lengths in
     let rest = List.tl lengths in
@@ -236,14 +236,16 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
   let import_list l =
     failwith "Not a list"
 
-  let clean d =
-    let single_length d1 =
-      let lengths = all_lengths d1 in
-      let first = List.hd lengths in
-      let rest = List.tl lengths in
-      List.fold_left (fun init a -> if init = a then init else raise (TreeException d)) first rest
-    in  
-    match d with
+  let single_length d =
+    let lengths = all_lengths d in
+    let first = List.hd lengths in
+    let rest = List.tl lengths in
+    if List.for_all (fun a -> (a = first)) rest then
+      first
+    else
+      raise (TreeException d)
+
+  let rec clean = function
     | Twonode {left2 = left; value = _; right2 = right} as node when single_length left = single_length right -> 
         node
     | Threenode {left3 = left; lvalue = _; middle3 = middle; rvalue = _; right3 = right} as node when single_length left = single_length middle && single_length middle = single_length right -> 
@@ -258,8 +260,11 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
         Twonode {left2 = Twonode {left2 = a; value = x; right2 = b}; value = w; right2 = Twonode {left2 = c; value = y; right2 = d}}
     | Threenode {left3 = a; lvalue = x; middle3 = b; rvalue = y; right3 = Twonode {left2 = c; value = w; right2 = d} as right} when single_length a = single_length b && single_length b + 1 = single_length right ->
         Twonode {left2 = Twonode {left2 = a; value = x; right2 = b}; value = y; right2 = Twonode {left2 = c; value = w; right2 = d}}
-    (*| _ -> failwith "Unexpected case (line 257)"*)
-    | node -> node
+    | Twonode ({left2 = left; value = _; right2 = right} as node) ->
+        clean (Twonode {node with left2 = clean left; right2 = clean right})
+    | Threenode ({left3 = left; lvalue = _; middle3 = middle; rvalue = _; right3 = right} as node) ->
+        clean (Threenode {node with left3 = clean left; middle3 = clean middle; right3 = clean right})
+    | d -> Printf.printf "\nLine 265\n"; raise (TreeException d)
 
   let insert k v d =
     let d = rep_ok d in 
