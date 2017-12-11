@@ -208,27 +208,35 @@ module MoreTreeTests = struct
 		badtrees
 
 	let insert_test _ =
-		let hundred_nothing = List.init 100 (fun _ -> ()) in
+		let entries = 75 in
+		let lots_of_nothing = List.init entries (fun _ -> ()) in
 		Random.self_init ();
 		try
 			let folder init _ =
-				let random = (Random.int 99) + 1 in
-				printf "\nInserting %d...\n" random;
+				let rec choose_random _ =
+					let random = (Random.int 99) + 1 in
+					if D.(init |> member random) then
+						choose_random ()
+					else
+						random
+				in
+				let random = choose_random () in
+				if verbose then printf "\nInserting %d...\n" random;
 				let next = D.(init |> insert random "") in
-				D.(next |> expose_tree |> print_tree);
+				if verbose then D.(next |> expose_tree |> print_tree);
 				next
 			in
-			let result = List.fold_left folder D.empty hundred_nothing in
-			if verbose then D.(result |> expose_tree |> print_tree);
+			let result = List.fold_left folder D.empty lots_of_nothing in
+			if verbose then printf "\nInsert test successful! Inserted %d entries!\n" entries;
 			assert D.(result |> rep_ok = result)
 		with
-		| D.TreeException d as e -> print_tree D.(d |> expose_tree); raise e 
-		| _ -> failwith "Unknown exception"	
+		| D.TreeException d as e -> print_tree D.(d |> expose_tree); raise e
+		| e -> raise e	
 
 	let tests =
 		[
 			"type"		>:: type_test;
-			"rep_ok"	>:: rep_ok_test;
+			(*"rep_ok"	>:: rep_ok_test;*)
 			"insert" 	>:: insert_test;
 		]
 
@@ -254,7 +262,7 @@ module MoreListTests = struct
 		]
 end
 
-let tests = ListDictionaryTester.tests @ TreeDictionaryTester.tests @ MoreTreeTests.tests @ MoreListTests.tests
+let tests = (*ListDictionaryTester.tests @ TreeDictionaryTester.tests @*) MoreTreeTests.tests (*@ MoreListTests.tests*)
 
 (* DO NOT call OUnit2.run_test_tt_main from here.  It must
  * be called only in test_main.ml.  *)
