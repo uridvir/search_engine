@@ -110,6 +110,13 @@ module DictTester (M: DictionaryMaker) = struct
 		]
 end
 
+(* [tests] is where you should provide OUnit test cases for
+ * your own implementations of dictionaries and sets.  You're
+ * free to use [DictTester] as part of that if you choose. *)
+
+module ListDictionaryTester = DictTester(MakeListDictionary)
+module TreeDictionaryTester = DictTester(MakeTreeDictionary)
+
 let print_tree d =
 	let rec print_loop prev_indent indent = function
 		| Twonode {left2 = left; value = (k1, v1); right2 = right} ->
@@ -138,40 +145,18 @@ let print_tree d =
 	in
 	let print_start d = match d with
 		| Twonode {left2 = left; value = (k1, v1); right2 = right} ->
-			print_loop "" "   " left;
-			if k1 < 10 then
-				printf "%d--|\n" k1
-			else if k1 < 100 then
-				printf "%d-|\n" k1
-			else
-				printf "%d|\n" k1;
-			print_loop "" "   " right
+			print_loop "" "" left;
+			printf "%d\n" k1;
+			print_loop "" "" right
 		| Threenode {left3 = left; lvalue = (k1, v1); middle3 = middle; rvalue = (k2, v2); right3 = right} ->
-			print_loop "" "   " left;
-			if k1 < 10 then
-				printf "%d  |\n" k1
-			else if k1 < 100 then
-				printf "%d |\n" k1
-			else
-				printf "%d|\n" k1;
-			print_loop "" "|--" middle;
-			if k2 < 10 then
-				printf "%d  |\n" k2
-			else if k2 < 100 then
-				printf "%d |\n" k2
-			else
-				printf "%d|\n" k2;
-			print_loop "" "   " right
+			print_loop "" "" left;
+			printf "%d\n" k1;
+			print_loop "" "" middle;
+			printf "%d\n" k2;
+			print_loop "" "" right
 		| Leaf -> printf "LEAF\n" 
 	in
 	printf "\n"; print_start d
-
-(* [tests] is where you should provide OUnit test cases for
- * your own implementations of dictionaries and sets.  You're
- * free to use [DictTester] as part of that if you choose. *)
-
-module ListDictionaryTester = DictTester(MakeListDictionary)
-module TreeDictionaryTester = DictTester(MakeTreeDictionary)
 
 module MoreTreeTests = struct
 	module D = MakeTreeDictionary(IntKey)(StringValue)
