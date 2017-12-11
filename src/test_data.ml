@@ -210,9 +210,20 @@ module MoreTreeTests = struct
 	let insert_test _ =
 		let hundred_nothing = List.init 100 (fun _ -> ()) in
 		Random.self_init ();
-		let result = List.fold_left (fun init _ -> let random = (Random.int 99) + 1 in let next = D.(init |> insert random "") in printf "\nInserting %d...\n" random; D.(next |> expose_tree |> print_tree); next) D.empty hundred_nothing in
-		if verbose then D.(result |> expose_tree |> print_tree);
-		assert D.(result |> rep_ok = result)
+		try
+			let folder init _ =
+				let random = (Random.int 99) + 1 in
+				printf "\nInserting %d...\n" random;
+				let next = D.(init |> insert random "") in
+				D.(next |> expose_tree |> print_tree);
+				next
+			in
+			let result = List.fold_left folder D.empty hundred_nothing in
+			if verbose then D.(result |> expose_tree |> print_tree);
+			assert D.(result |> rep_ok = result)
+		with
+		| D.TreeException d as e -> print_tree D.(d |> expose_tree); raise e 
+		| _ -> failwith "Unknown exception"	
 
 	let tests =
 		[

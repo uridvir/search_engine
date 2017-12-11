@@ -52,6 +52,8 @@ module type Dictionary = sig
   val expose_tree : t -> (key, value) tree23
   (*Extension to spec:*)
   val import_tree : (key, value) tree23 -> t
+  exception TreeException of t
+  exception ListException of t
   val format : Format.formatter -> t -> unit
 end
 
@@ -74,6 +76,9 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
   The dictionary type, essentially an association list (a list of tuples). Each tuple contains a key (of type Key.t), and a value (of type Value.t).
   *)
   type t = (key * value) list
+
+  exception TreeException of t
+  exception ListException of t
 
   (*Makes sure this dictionary is valid. Is currently IMPROPERLY IMPLEMENTED and performs no checks.*)
   let rec rep_ok = function
@@ -170,6 +175,9 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
 
   type t = (key, value) tree23
 
+  exception TreeException of t
+  exception ListException of t
+
   let rec all_lengths = function
     | Twonode {left2 = left; value = _; right2 = right} ->
         List.map (fun a -> a + 1) (all_lengths left @ all_lengths right)
@@ -233,23 +241,23 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
       let lengths = all_lengths d1 in
       let first = List.hd lengths in
       let rest = List.tl lengths in
-      let print_lengths _ =
-        Printf.printf "\n"; 
-        List.iter (fun i -> Printf.printf "%d " i) lengths; 
-        Printf.printf "\n";
-        failwith "No single length!"
-      in
-      List.fold_left (fun init a -> if init = a then init else print_lengths ()) first rest
+      List.fold_left (fun init a -> if init = a then init else raise (TreeException d)) first rest
     in  
     match d with
     | Twonode {left2 = left; value = _; right2 = right} as node when single_length left = single_length right -> 
         node
     | Threenode {left3 = left; lvalue = _; middle3 = middle; rvalue = _; right3 = right} as node when single_length left = single_length middle && single_length middle = single_length right -> 
         node
-    | Twonode {left2 = l; value = (k1, v1) as x; right2 = Twonode {left2 = m; value = (k2, v2) as w; right2 = r} as right} when single_length l + 1 = single_length right ->
-        Threenode {left3 = l; lvalue = x; middle3 = m; rvalue = w; right3 = r}
-    | Twonode {left2 = Twonode {left2 = l; value = (k1, v1) as w; right2 = m} as left; value = (k2, v2) as x; right2 = r} when single_length left = single_length r + 1 ->
+    | Twonode {left2 = Twonode {left2 = l; value = w; right2 = m} as left; value = x; right2 = r} when single_length left = single_length r + 1 ->
         Threenode {left3 = l; lvalue = w; middle3 = m; rvalue = x; right3 = r}
+    | Twonode {left2 = l; value = x; right2 = Twonode {left2 = m; value = w; right2 = r} as right} when single_length l + 1 = single_length right ->
+        Threenode {left3 = l; lvalue = x; middle3 = m; rvalue = w; right3 = r}
+    | Threenode {left3 = Twonode {left2 = a; value = w; right2 = b} as left; lvalue = x; middle3 = c; rvalue = y; right3 = d} when single_length left = single_length c + 1 && single_length c = single_length d ->
+        Twonode {left2 = Twonode {left2 = a; value = w; right2 = b}; value = x; right2 = Twonode {left2 = c; value = y; right2 = d}}
+    | Threenode {left3 = a; lvalue = x; middle3 = Twonode {left2 = b; value = w; right2 = c} as middle; rvalue = y; right3 = d} when single_length a + 1 = single_length middle && single_length middle = single_length d + 1 ->
+        Twonode {left2 = Twonode {left2 = a; value = x; right2 = b}; value = w; right2 = Twonode {left2 = c; value = y; right2 = d}}
+    | Threenode {left3 = a; lvalue = x; middle3 = b; rvalue = y; right3 = Twonode {left2 = c; value = w; right2 = d} as right} when single_length a = single_length b && single_length b + 1 = single_length right ->
+        Twonode {left2 = Twonode {left2 = a; value = x; right2 = b}; value = y; right2 = Twonode {left2 = c; value = w; right2 = d}}
     (*| _ -> failwith "Unexpected case (line 257)"*)
     | node -> node
 

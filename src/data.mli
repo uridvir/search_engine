@@ -163,6 +163,9 @@ module type Dictionary = sig
    * This is useful for debugging and unit testing. *)
   val import_tree : (key, value) tree23 -> t
 
+  exception TreeException of t
+  exception ListException of t
+
   (* [format] is a printing function suitable for use
    * with the toplevel's [#install_printer] directive.
    * It outputs a textual representation of a dictionary
