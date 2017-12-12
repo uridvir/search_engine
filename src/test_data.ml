@@ -161,7 +161,7 @@ let print_tree d =
 module MoreTreeTests = struct
 	module D = MakeTreeDictionary(IntKey)(StringValue)
 
-	let verbose = true
+	let verbose = false
 
 	let type_test _ =
 		assert

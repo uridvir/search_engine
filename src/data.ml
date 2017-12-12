@@ -375,11 +375,56 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
     let d = rep_ok d in
     insert_down k v d
 
-  (*Very crappy remove function. TODO: Avi, write a better one.*)
+  let rec remove_successor = function
+    | Twonode {left2 = Twonode {left2 = Leaf; value = v; right2 = Leaf}; value = w; right2 = Twonode {left2 = Leaf; value = x; right2 = Leaf}} -> 
+        (v, insert_up (Threenode {left3 = Leaf; lvalue = w; middle3 = Leaf; rvalue = x; right3 = Leaf}))
+    | Threenode {left3 = Leaf; lvalue = v; middle3 = Leaf; rvalue = w; right3 = Leaf} ->
+        (v, insert_up (Twonode {left2 = Leaf; value = w; right2 = Leaf}))
+    | Twonode {left2 = left; value = _; right2 = _} -> 
+        let (successor, branch) = remove_successor left in (successor, insert_up branch)
+    | Threenode {left3 = left; lvalue = _; middle3 = _; rvalue = _; right3 = _} -> 
+        let (successor, branch) = remove_successor left in (successor, insert_up branch)
+    | d -> raise (TreeException d)
+
+  let rec remove_initial k = function
+    | Leaf -> Leaf
+    | Twonode {left2 = Leaf; value = (k1, v1); right2 = Leaf} as node ->
+        if Key.compare k k1 = `EQ then
+          Leaf
+        else
+          node
+    | Threenode {left3 = Leaf; lvalue = (k1, v1); middle3 = Leaf; rvalue = (k2, v2); right3 = Leaf} as node ->
+        if Key.compare k k1 = `EQ then
+          Twonode {left2 = Leaf; value = (k2, v2); right2 = Leaf}
+        else if Key.compare k k2 = `EQ then
+          Twonode {left2 = Leaf; value = (k1, v1); right2 = Leaf}
+        else
+          node
+    | Twonode ({left2 = left; value = (k1, v1); right2 = right} as node) ->
+        if Key.compare k k1 = `LT then 
+          insert_up (Twonode {node with left2 = remove_initial k left})
+        else if Key.compare k k1 = `EQ then
+          let (successor, branch) = remove_successor right in
+          insert_up (Twonode {node with value = successor; right2 = branch})
+        else 
+          insert_up (Twonode {node with right2 = remove_initial k right})
+    | Threenode ({left3 = left; lvalue = (k1, v1); middle3 = middle; rvalue = (k2, v2); right3 = right} as node) ->
+        if Key.compare k k1 = `LT then
+          insert_up (Threenode {node with left3 = remove_initial k left})
+        else if Key.compare k k1 = `EQ then 
+          let (successor, branch) = remove_successor middle in
+          insert_up (Threenode {node with lvalue = successor; middle3 = branch})
+        else if Key.compare k k2 = `LT then 
+          insert_up (Threenode {node with middle3 = remove_initial k middle})
+        else if Key.compare k k2 = `EQ then
+          let (successor, branch) = remove_successor right in
+          insert_up (Threenode {node with rvalue = successor; right3 = branch})
+        else 
+          insert_up (Threenode {node with right3 = remove_initial k right})
+
   let remove k d =
     let d = rep_ok d in
-    d |> to_list |> List.filter (fun a -> let k1, _ = a in Key.compare k k1 != `EQ) |> 
-    List.fold_left (fun init a -> let k1, v1 = a in init |> insert k1 v1) empty
+    d |> remove_initial k
 
   let rec find k d =
     let d = rep_ok d in
