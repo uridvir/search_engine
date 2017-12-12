@@ -236,7 +236,7 @@ module MoreTreeTests = struct
 	let tests =
 		[
 			"type"		>:: type_test;
-			(*"rep_ok"	>:: rep_ok_test;*)
+			"rep_ok"	>:: rep_ok_test;
 			"insert" 	>:: insert_test;
 		]
 
@@ -262,7 +262,7 @@ module MoreListTests = struct
 		]
 end
 
-let tests = (*ListDictionaryTester.tests @ TreeDictionaryTester.tests @*) MoreTreeTests.tests (*@ MoreListTests.tests*)
+let tests = ListDictionaryTester.tests @ TreeDictionaryTester.tests @ MoreTreeTests.tests @ MoreListTests.tests
 
 (* DO NOT call OUnit2.run_test_tt_main from here.  It must
  * be called only in test_main.ml.  *)

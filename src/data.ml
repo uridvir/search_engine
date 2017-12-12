@@ -374,27 +374,39 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
 
   let rec remove_initial k = function
     | Leaf -> Leaf
+    | Twonode {left2 = Leaf; value = (k1, v1); right2 = Leaf} as node ->
+        if Key.compare k k1 = `EQ then
+          Leaf
+        else
+          node
+    | Threenode {left3 = Leaf; lvalue = (k1, v1); middle3 = Leaf; rvalue = (k2, v2); right3 = Leaf} as node ->
+        if Key.compare k k1 = `EQ then
+          Twonode {left2 = Leaf; value = (k2, v2); right2 = Leaf}
+        else if Key.compare k k2 = `EQ then
+          Twonode {left2 = Leaf; value = (k1, v1); right2 = Leaf}
+        else
+          node
     | Twonode ({left2 = left; value = (k1, v1); right2 = right} as node) ->
         if Key.compare k k1 = `LT then 
-          remove_initial k left |> insert_up
+          insert_up (Twonode {node with left2 = remove_initial k left})
         else if Key.compare k k1 = `EQ then
           let (successor, branch) = remove_successor right in
           insert_up (Twonode {node with value = successor; right2 = branch})
         else 
-          remove_initial k right |> insert_up
+          insert_up (Twonode {node with right2 = remove_initial k right})
     | Threenode ({left3 = left; lvalue = (k1, v1); middle3 = middle; rvalue = (k2, v2); right3 = right} as node) ->
         if Key.compare k k1 = `LT then
-          remove_initial k left |> insert_up
+          insert_up (Threenode {node with left3 = remove_initial k left})
         else if Key.compare k k1 = `EQ then 
           let (successor, branch) = remove_successor middle in
           insert_up (Threenode {node with lvalue = successor; middle3 = branch})
         else if Key.compare k k2 = `LT then 
-          remove_initial k middle |> insert_up
+          insert_up (Threenode {node with middle3 = remove_initial k middle})
         else if Key.compare k k2 = `EQ then
           let (successor, branch) = remove_successor right in
           insert_up (Threenode {node with rvalue = successor; right3 = branch})
         else 
-          remove_initial k right |> insert_up
+          insert_up (Threenode {node with right3 = remove_initial k right})
 
   let remove k d =
     let d = rep_ok d in
@@ -402,7 +414,7 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
 
   let insert k v d =
     let d = rep_ok d in
-    d (*|> remove k*) |> insert_down k v
+    d |> remove k |> insert_down k v
 
   let rec find k d =
     let d = rep_ok d in
