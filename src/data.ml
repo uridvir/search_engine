@@ -408,6 +408,21 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
           insert_up (Twonode {node with value = successor; right2 = branch})
         else 
           insert_up (Twonode {node with right2 = remove_initial k right})
+    | Threenode {
+        left3 = Twonode {left2 = Leaf; value = (k1, v1) as a; right2 = Leaf};
+        lvalue = x;
+        middle3 = Twonode {left2 = Leaf; value = (k2, v2) as b; right2 = Leaf};
+        rvalue = y;
+        right3 = Twonode {left2 = Leaf; value = (k3, v3) as c; right2 = Leaf};
+      } as node ->
+        if Key.compare k k1 = `EQ then
+          Twonode {left2 = Threenode {left3 = Leaf; lvalue = x; middle3 = Leaf; rvalue = b; right3 = Leaf}; value = y; right2 = Twonode {left2 = Leaf; value = c; right2 = Leaf}}
+        else if Key.compare k k2 = `EQ then
+          Twonode {left2 = Threenode {left3 = Leaf; lvalue = a; middle3 = Leaf; rvalue = x; right3 = Leaf}; value = y; right2 = Twonode {left2 = Leaf; value = c; right2 = Leaf}}
+        else if Key.compare k k3 = `EQ then
+          Twonode {left2 = Twonode {left2 = Leaf; value = a; right2 = Leaf}; value = x; right2 = Threenode {left3 = Leaf; lvalue = b; middle3 = Leaf; rvalue = y; right3 = Leaf}}
+        else
+          node
     | Threenode ({left3 = left; lvalue = (k1, v1); middle3 = middle; rvalue = (k2, v2); right3 = right} as node) ->
         if Key.compare k k1 = `LT then
           insert_up (Threenode {node with left3 = remove_initial k left})

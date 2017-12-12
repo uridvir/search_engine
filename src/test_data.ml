@@ -226,13 +226,39 @@ module MoreTreeTests = struct
 			assert D.(result |> rep_ok = result)
 		with
 		| D.TreeException d as e -> print_tree D.(d |> expose_tree); raise e
-		| e -> raise e	
+		| e -> raise e
+
+	let remove_test _ =
+		let tree1 = Twonode
+		{
+			left2 = Twonode {left2 = Leaf; value = (1, ""); right2 = Leaf};
+			value = (2, "");
+			right2 = Twonode {left2 = Leaf; value = (3, ""); right2 = Leaf};
+		}
+		and tree2 = Threenode
+		{
+			left3 = Twonode {left2 = Leaf; value = (1, ""); right2 = Leaf};
+			lvalue = (2, "");
+			middle3 = Twonode {left2 = Leaf; value = (3, ""); right2 = Leaf};
+			rvalue = (4, "");
+			right3 = Twonode {left2 = Leaf; value = (5, ""); right2 = Leaf};
+		}
+		in 
+		print_tree tree1;
+		printf "\nRemoving 3 from two node...\n";
+		D.(tree1 |> import_tree |> remove 3 |> rep_ok |> expose_tree |> print_tree);
+		printf "\nRemoving 3 from two node successful.\n";
+		print_tree tree2;
+		printf "\nRemoving 3 from three node...\n";
+		D.(tree2 |> import_tree |> remove 3 |> rep_ok |> expose_tree |> print_tree);
+		printf "\nRemoving 3 from three node successful.\n"
 
 	let tests =
 		[
 			"type"		>:: type_test;
 			"rep_ok"	>:: rep_ok_test;
 			"insert" 	>:: insert_test;
+			"remove"	>:: remove_test;
 		]
 
 end
