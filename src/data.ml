@@ -209,7 +209,8 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
       if order_check d then
         d
       else
-        failwith "Bad tree! Failed order_check"
+        (*failwith "Bad tree! Failed order_check"*)
+        raise (TreeException d)
     else
       failwith "Bad tree! Failed all_lengths check"
  
@@ -318,6 +319,15 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
     | _ -> failwith "Couldn't deconstruct list!"
   
   let rec insert_down k v = function
+    (*two node with duplicate key*)
+    | Twonode ({left2 = left; value = (k1, v1); right2 = right} as node) when Key.compare k k1 = `EQ ->
+        Twonode {node with value = (k, v)}
+    (*three node with duplicate key on the left*)
+    | Threenode ({left3 = left; lvalue = (k1, v1); middle3 = middle; rvalue = (k2, v2); right3 = right} as node) when Key.compare k k1 = `EQ ->
+        Threenode {node with lvalue = (k, v)}
+    (*three node with duplicate key on the right*)
+    | Threenode ({left3 = left; lvalue = (k1, v1); middle3 = middle; rvalue = (k2, v2); right3 = right} as node) when Key.compare k k2 = `EQ ->
+        Threenode {node with rvalue = (k, v)}
     (*terminal two node to fill*)
     | Twonode {left2 = Leaf; value = (k1, v1); right2 = Leaf} ->
         if Key.compare k k1 = `LT then 
@@ -335,7 +345,7 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
     (*empty tree to fill*)
     | Leaf -> Twonode {left2 = Leaf; value = (k, v); right2 = Leaf}
     (*two node with child to explore*)
-    | Twonode({left2 = left; value = (k1, v1); right2 = right} as node) ->
+    | Twonode ({left2 = left; value = (k1, v1); right2 = right} as node) ->
         let result =
           if Key.compare k k1 = `LT then
             (*explore left*)
@@ -360,6 +370,10 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
         (*kick up the result to the next layer*)
         in insert_up result
     (*"I want to explore your child." Sounds like something a pedophile would say...*)
+
+  let insert k v d =
+    let d = rep_ok d in
+    insert_down k v d
 
   let rec remove_successor = function
     | Twonode {left2 = Twonode {left2 = Leaf; value = v; right2 = Leaf}; value = w; right2 = Twonode {left2 = Leaf; value = x; right2 = Leaf}} -> 
@@ -411,10 +425,6 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
   let remove k d =
     let d = rep_ok d in
     d |> remove_initial k
-
-  let insert k v d =
-    let d = rep_ok d in
-    d |> remove k |> insert_down k v
 
   let rec find k d =
     let d = rep_ok d in

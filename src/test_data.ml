@@ -192,12 +192,13 @@ module MoreTreeTests = struct
 			}
 		]
 		in
+		if verbose then printf "\nAll these trees are invalid, and rep_ok should know that:\n";
 		List.iter
 		(
 		fun t ->
 			try
-				printf "\nTesting...\n";
-				print_tree t;
+				
+				if verbose then print_tree t;
 				ignore D.(t |> import_tree |> rep_ok);
 				raise Fine (*this should NOT be thrown, all the trees in this test are invalid*)
 			with
@@ -205,7 +206,8 @@ module MoreTreeTests = struct
 			| Failure _ -> ()
 			| _ -> failwith "rep_ok produced unexpected behavior!"
 		)
-		badtrees
+		badtrees;
+		if verbose then printf "\nrep_ok test successful!\n"
 
 	let insert_test _ =
 		let entries = 75 in
@@ -213,14 +215,7 @@ module MoreTreeTests = struct
 		Random.self_init ();
 		try
 			let folder init _ =
-				let rec choose_random _ =
-					let random = (Random.int 99) + 1 in
-					if D.(init |> member random) then
-						choose_random ()
-					else
-						random
-				in
-				let random = choose_random () in
+				let random = (Random.int 99) + 1 in
 				if verbose then printf "\nInserting %d...\n" random;
 				let next = D.(init |> insert random "") in
 				if verbose then D.(next |> expose_tree |> print_tree);
