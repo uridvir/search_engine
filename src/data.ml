@@ -52,6 +52,8 @@ module type Dictionary = sig
   val expose_tree : t -> (key, value) tree23
   (*Extension to spec:*)
   val import_tree : (key, value) tree23 -> t
+  exception TreeException of t
+  exception ListException of t
   val format : Format.formatter -> t -> unit
 end
 
@@ -74,6 +76,9 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
   The dictionary type, essentially an association list (a list of tuples). Each tuple contains a key (of type Key.t), and a value (of type Value.t).
   *)
   type t = (key * value) list
+
+  exception TreeException of t
+  exception ListException of t
 
   (*Makes sure this dictionary is valid. Is currently IMPROPERLY IMPLEMENTED and performs no checks.*)
   let rec rep_ok = function
@@ -170,22 +175,44 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
 
   type t = (key, value) tree23
 
-  let rec rep_ok d =
-    let branch t cmp k = 
-      match t with
-      | Leaf -> true
-      | Twonode {left2 = _; value = (k1, v1); right2 = _} when Key.compare k1 k = cmp -> true
-      | Threenode {left3 = _; lvalue = (k1, v1); middle3 = _; rvalue = (k2, v2); right3 = _} when Key.compare k1 k = cmp && Key.compare k2 k = cmp -> true
-      | _ -> false
-    in
-    match d with
-    | Leaf -> d
+  exception TreeException of t
+  exception ListException of t
+
+  let rec all_lengths = function
+    | Twonode {left2 = left; value = _; right2 = right} ->
+        List.map (fun a -> a + 1) (all_lengths left @ all_lengths right)
+    | Threenode {left3 = left; lvalue = _; middle3 = middle; rvalue = _; right3 = right} ->
+        List.map (fun a -> a + 1) (all_lengths left @ all_lengths middle @ all_lengths right)
+    | Leaf -> [0]
+    
+  let branch t cmp k = 
+    match t with
+    | Leaf -> true
+    | Twonode {left2 = _; value = (k1, v1); right2 = _} when Key.compare k1 k = cmp -> true
+    | Threenode {left3 = _; lvalue = (k1, v1); middle3 = _; rvalue = (k2, v2); right3 = _} when Key.compare k1 k = cmp && Key.compare k2 k = cmp -> true
+    | _ -> false
+
+  let rec order_check = function
+    | Leaf -> true
     | Twonode {left2 = left; value = (k, v); right2 = right} when branch left `LT k && branch right `GT k &&
-      rep_ok left = left && rep_ok right = right -> d
+      order_check left && order_check right -> true
     | Threenode {left3 = left; lvalue = (k, v); middle3 = middle; rvalue = (k1, v1); right3 = right} when Key.compare k k1 = `LT &&
-      branch left `LT k && branch middle `GT k && branch middle `LT k1 && branch right `GT k1 && rep_ok left = left && rep_ok middle = middle &&
-      rep_ok right = right -> d
-    | _ -> failwith "Bad tree!"
+      branch left `LT k && branch middle `GT k && branch middle `LT k1 && branch right `GT k1 && order_check left && order_check middle &&
+      order_check right -> true
+    | _ -> false
+
+  let rep_ok d =
+    let lengths = all_lengths d in
+    let first = List.hd lengths in
+    let rest = List.tl lengths in
+    if List.for_all (fun a -> (a = first)) rest then
+      if order_check d then
+        d
+      else
+        (*failwith "Bad tree! Failed order_check"*)
+        raise (TreeException d)
+    else
+      failwith "Bad tree! Failed all_lengths check"
  
   let empty = Leaf
 
@@ -210,133 +237,145 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
   let import_list l =
     failwith "Not a list"
 
-  let insert k v d =
-    let d = rep_ok d in 
-    (*takes three key-value tuples and sorts them by key, returning a tuple of tuples*)
-    let sort_three a b c =
-      let (a, b, c) = match (List.sort (fun a b -> let k, _ = a and k1, _ = b in match Key.compare k k1 with | `LT -> -1 | `EQ -> 0 | `GT -> 1) [a; b; c]) with
-        | a :: b :: c :: [] -> (a, b, c)
-        | _ -> failwith "Couldn't deconstruct list!" 
-      in (a, b, c)
-    in
-    let rec descend k v = function
-      (*three node to fill on the left (two node parent)*)
-      | Twonode {left2 = Threenode {left3 = Leaf; lvalue = (k2, v2); middle3 = Leaf; rvalue = (k3, v3); right3 = Leaf}; 
-        value = (k1, v1); right2 = right} when Key.compare k k1 = `LT ->
-          let (first, second, last) = sort_three (k, v) (k2, v2) (k3, v3) in
-          Threenode 
-          {
-            left3 = Twonode {left2 = Leaf; value = first; right2 = Leaf}; 
-            lvalue = second;
-            middle3 = Twonode {left2 = Leaf; value = last; right2 = Leaf}; 
-            rvalue = (k1, v1); 
-            right3 = right;
-          }
+  let single_length d =
+    let lengths = all_lengths d in
+    let first = List.hd lengths in
+    let rest = List.tl lengths in
+    if List.for_all (fun a -> (a = first)) rest then
+      first
+    else
+      raise (TreeException d)
 
-      (*three node to fill on the right (two node parent)*)
-      | Twonode {left2 = left; value = (k1, v1); right2 = Threenode {left3 = Leaf; lvalue = (k2, v2); middle3 = Leaf; rvalue = (k3, v3); right3 = Leaf}} 
-        when Key.compare k k1 != `LT ->
-          let (first, second, last) = sort_three (k, v) (k2, v2) (k3, v3) in
-          Threenode {
-            left3 = left;
-            lvalue = (k1, v1);
-            middle3 = Twonode {left2 = Leaf; value = first; right2 = Leaf};
-            rvalue = second;
-            right3 = Twonode {left2 = Leaf; value = last; right2 = Leaf};
-          }
-
-      (*three node to fill on the left (three node parent)*)
-      | Threenode {left3 = Threenode {left3 = Leaf; lvalue = (k3, v3); middle3 = Leaf; rvalue = (k4, v4); right3 = Leaf};
-        lvalue = (k1, v1); middle3 = middle; rvalue = (k2, v2); right3 = right} when Key.compare k k1 = `LT ->
-          let (first, second, last) = sort_three (k, v) (k3, v3) (k4, v4) in
-          Twonode 
-            {
-              left2 = Twonode 
-                { 
-                  left2 = Twonode {left2 = Leaf; value = first; right2 = Leaf};
-                  value = second;
-                  right2 = Twonode {left2 = Leaf; value = last; right2 = Leaf}
-                };
-              value = (k1, v1);
-              right2 = Twonode {left2 = middle; value = (k2, v2); right2 = right}
-            }
-
-      (*three node to fill in the middle (three node parent)*)
-      | Threenode {left3 = left; lvalue = (k1, v1); middle3 = Threenode {left3 = Leaf; lvalue = (k3, v3); middle3 = Leaf; rvalue = (k4, v4); right3 = Leaf};
-        rvalue = (k2, v2); right3 = right} when Key.compare k k1 != `LT && Key.compare k k2 = `LT ->
-          let (first, second, last) = sort_three (k, v) (k3, v3) (k4, v4) in
-          Twonode 
-            {
-              left2 = Twonode 
-                { 
-                  left2 = left;
-                  value = (k1, v1);
-                  right2 = Twonode {left2 = Leaf; value = first; right2 = Leaf}
-                };
-              value = second;
-              right2 = Twonode 
-              {
-                left2 = Twonode {left2 = Leaf; value = last; right2 = Leaf};
-                value = (k2, v2); 
-                right2 = right
-              }
-            }
-      
-      (*three node to fill on the right (three node parent)*)
-      | Threenode {left3 = left; lvalue = (k1, v1); middle3 = middle; rvalue = (k2, v2); 
-        right3 = Threenode {left3 = Leaf; lvalue = (k3, v3); middle3 = Leaf; rvalue = (k4, v4); right3 = Leaf}} when Key.compare k k1 != `LT && Key.compare k k2 != `LT ->
-          let (first, second, last) = sort_three (k, v) (k3, v3) (k4, v4) in
-          Twonode 
-            {
-              left2 = Twonode {left2 = left; value = (k1, v1); right2 = middle};
-              value = (k2, v2);
-              right2 = Twonode 
-                {
-                  left2 = Twonode {left2 = Leaf; value = first; right2 = Leaf};
-                  value = second;
-                  right2 = Twonode {left2 = Leaf; value = last; right2 = Leaf}
-                }
-            }
-
-      (*two node to fill*)
-      | Twonode {left2 = Leaf; value = (k1, v1); right2 = Leaf} ->
-          if Key.compare k k1 = `LT then 
-            Threenode {left3 = Leaf; lvalue = (k, v); middle3 = Leaf; rvalue = (k1, v1); right3 = Leaf}
-          else 
-            Threenode {left3 = Leaf; lvalue = (k1, v1); middle3 = Leaf; rvalue = (k, v); right3 = Leaf}
-      
-      (*two node with child to explore*)
-      | Twonode({left2 = left; value = (k1, v1); right2 = right} as node) ->
-          (*explore left*)
-          if Key.compare k k1 = `LT then 
-            Twonode {node with left2 = descend k v left}
-          (*explore right*)
-          else
-            Twonode {node with right2 = descend k v right}
-      
-      (*three node with child to explore*)
-      | Threenode({left3 = left; lvalue = (k1, v1); middle3 = middle; rvalue = (k2, v2); right3 = right} as node) ->
-          (*explore left*)
-          if Key.compare k k1 = `LT then
-            Threenode {node with left3 = descend k v left}
-          (*explore middle*)
-          else if Key.compare k k2 = `LT then
-            Threenode {node with middle3 = descend k v middle}
-          (*exlore right*)
-          else if Key.compare k k2 != `LT then
-            Threenode {node with right3 = descend k v right}
-          else
-            failwith "Key doesn't fit"
-
-      (*empty tree to fill*)
-      | Leaf -> Twonode {left2 = Leaf; value = (k, v); right2 = Leaf}
-
-      (*"I want to explore your child." Sounds like something a pedophile would say...*)
+  let insert_up d =
+    match d with
+    (*tree is balanced*)
+    | Twonode {left2 = left; value = _; right2 = right} as node when single_length left = single_length right -> 
+        node
+    | Threenode {left3 = left; lvalue = _; middle3 = middle; rvalue = _; right3 = right} as node when single_length left = single_length middle && single_length middle = single_length right -> 
+        node
     
-    (*TODO: call remove function on previous bindings of k when remove is properly implemented*)  
-    in d |> to_list |> List.filter (fun a -> let k1, _ = a in Key.compare k k1 != `EQ) |> 
-    List.fold_left (fun init a -> let k1, v1 = a in init |> descend k1 v1) empty |> descend k v
+    (*
+     *        x
+     *      /   \
+     *     w     r  -->     w x
+     *   /   \            /  |  \
+     * l      m          l   m   r
+     *)
+    | Twonode {left2 = Twonode {left2 = l; value = w; right2 = m} as left; value = x; right2 = r} when single_length left = single_length r + 1 ->
+        Threenode {left3 = l; lvalue = w; middle3 = m; rvalue = x; right3 = r}
 
+    (*
+     *     x
+     *   /   \
+     * l      w     -->     x w  
+     *      /   \         /  |  \
+     *     m     r       l   m   r
+     *)
+    | Twonode {left2 = l; value = x; right2 = Twonode {left2 = m; value = w; right2 = r} as right} when single_length l + 1 = single_length right ->
+        Threenode {left3 = l; lvalue = x; middle3 = m; rvalue = w; right3 = r}
+
+    (*
+     *       x y                 x
+     *     /  |  \             /   \
+     *    w   c   d  -->     w       y
+     *  /   \              /   \   /   \
+     * a     b            a    b   c    d
+     *)
+    | Threenode {left3 = Twonode {left2 = a; value = w; right2 = b} as left; lvalue = x; middle3 = c; rvalue = y; right3 = d} when single_length left = single_length c + 1 && single_length c = single_length d ->
+        Twonode {left2 = Twonode {left2 = a; value = w; right2 = b}; value = x; right2 = Twonode {left2 = c; value = y; right2 = d}}
+    
+    (*
+     *    x y                 w
+     *  /  |  \             /   \
+     * a   w   d  -->     x       y
+     *   /   \          /   \   /   \
+     *  b     c        a    b   c    d
+     *)
+    | Threenode {left3 = a; lvalue = x; middle3 = Twonode {left2 = b; value = w; right2 = c} as middle; rvalue = y; right3 = d} when single_length a + 1 = single_length middle && single_length middle = single_length d + 1 ->
+        Twonode {left2 = Twonode {left2 = a; value = x; right2 = b}; value = w; right2 = Twonode {left2 = c; value = y; right2 = d}}
+    
+    (*
+     *    x y                   y
+     *  /  |  \               /   \
+     * a   b   w    -->     x      w
+     *       /   \        /   \  /   \
+     *       c   d       a    b  c    d
+     *)
+    | Threenode {left3 = a; lvalue = x; middle3 = b; rvalue = y; right3 = Twonode {left2 = c; value = w; right2 = d} as right} when single_length a = single_length b && single_length b + 1 = single_length right ->
+        Twonode {left2 = Twonode {left2 = a; value = x; right2 = b}; value = y; right2 = Twonode {left2 = c; value = w; right2 = d}}
+    | d -> Printf.printf "\nFailed to find a case, bad tree:\n"; raise (TreeException d)
+
+  (*takes three key-value tuples and sorts them by key, returning a tuple of tuples*)
+  let sort_three a b c =
+    let sorter a b =
+      let k, _ = a and k1, _ = b in
+      match Key.compare k k1 with
+      | `LT -> -1 
+      | `EQ -> 0 
+      | `GT -> 1
+    in
+    match List.sort sorter [a; b; c] with
+    | a :: b :: c :: [] -> (a, b, c)
+    | _ -> failwith "Couldn't deconstruct list!"
+  
+  let rec insert_down k v = function
+    (*two node with duplicate key*)
+    | Twonode ({left2 = left; value = (k1, v1); right2 = right} as node) when Key.compare k k1 = `EQ ->
+        Twonode {node with value = (k, v)}
+    (*three node with duplicate key on the left*)
+    | Threenode ({left3 = left; lvalue = (k1, v1); middle3 = middle; rvalue = (k2, v2); right3 = right} as node) when Key.compare k k1 = `EQ ->
+        Threenode {node with lvalue = (k, v)}
+    (*three node with duplicate key on the right*)
+    | Threenode ({left3 = left; lvalue = (k1, v1); middle3 = middle; rvalue = (k2, v2); right3 = right} as node) when Key.compare k k2 = `EQ ->
+        Threenode {node with rvalue = (k, v)}
+    (*terminal two node to fill*)
+    | Twonode {left2 = Leaf; value = (k1, v1); right2 = Leaf} ->
+        if Key.compare k k1 = `LT then 
+          Threenode {left3 = Leaf; lvalue = (k, v); middle3 = Leaf; rvalue = (k1, v1); right3 = Leaf}
+        else 
+          Threenode {left3 = Leaf; lvalue = (k1, v1); middle3 = Leaf; rvalue = (k, v); right3 = Leaf}
+    (*terminal three node to fill*)
+    | Threenode {left3 = Leaf; lvalue = (k1, v1); middle3 = Leaf; rvalue = (k2, v2); right3 = Leaf} ->
+        let (first, second, last) = sort_three (k1, v1) (k2, v2) (k, v) in
+        Twonode {
+          left2 = Twonode {left2 = Leaf; value = first; right2 = Leaf};
+          value = second;
+          right2 = Twonode {left2 = Leaf; value = last; right2 = Leaf}
+        }
+    (*empty tree to fill*)
+    | Leaf -> Twonode {left2 = Leaf; value = (k, v); right2 = Leaf}
+    (*two node with child to explore*)
+    | Twonode ({left2 = left; value = (k1, v1); right2 = right} as node) ->
+        let result =
+          if Key.compare k k1 = `LT then
+            (*explore left*)
+            Twonode {node with left2 = insert_down k v left}
+          else
+            (*explore right*)
+            Twonode {node with right2 = insert_down k v right}
+        (*kick up the result to the next layer*)
+        in insert_up result
+    (*three node with child to explore*)
+    | Threenode({left3 = left; lvalue = (k1, v1); middle3 = middle; rvalue = (k2, v2); right3 = right} as node) ->
+        let result =
+          if Key.compare k k1 = `LT then
+            (*explore left*)
+            Threenode {node with left3 = insert_down k v left}
+          else if Key.compare k k2 = `LT then
+            (*explore middle*)
+            Threenode {node with middle3 = insert_down k v middle}
+          else
+            (*exlore right*)
+            Threenode {node with right3 = insert_down k v right}
+        (*kick up the result to the next layer*)
+        in insert_up result
+    (*"I want to explore your child." Sounds like something a pedophile would say...*)
+
+  let insert k v d =
+    let d = rep_ok d in
+    insert_down k v d
+
+  (*Very crappy remove function. TODO: Avi, write a better one.*)
   let remove k d =
     let d = rep_ok d in
     d |> to_list |> List.filter (fun a -> let k1, _ = a in Key.compare k k1 != `EQ) |> 
@@ -361,12 +400,6 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
     let d = rep_ok d in
     match find k d with | Some v -> true | None -> false
 
-  (* Sublime syntax highlighting freaks out if I type this:
-   *
-   * let choose d = function
-   *
-   * So for now, you must suffer... 
-   *)
   let choose d = 
     let d = rep_ok d in 
     match d with
@@ -378,7 +411,7 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
     let d = rep_ok d in
     List.fold_left (fun init a -> let (k, v) = a in f k v init) init (to_list d)
 
-  let expose_tree d = rep_ok d
+  let expose_tree d = d
 
   let import_tree t = rep_ok t
 
