@@ -161,7 +161,7 @@ let print_tree d =
 module MoreTreeTests = struct
 	module D = MakeTreeDictionary(IntKey)(StringValue)
 
-	let verbose = false
+	let verbose = true
 
 	let type_test _ =
 		assert
@@ -244,14 +244,26 @@ module MoreTreeTests = struct
 			right3 = Twonode {left2 = Leaf; value = (5, ""); right2 = Leaf};
 		}
 		in 
-		print_tree tree1;
-		printf "\nRemoving 3 from two node...\n";
-		D.(tree1 |> import_tree |> remove 3 |> rep_ok |> expose_tree |> print_tree);
-		printf "\nRemoving 3 from two node successful.\n";
-		print_tree tree2;
-		printf "\nRemoving 3 from three node...\n";
-		D.(tree2 |> import_tree |> remove 3 |> rep_ok |> expose_tree |> print_tree);
-		printf "\nRemoving 3 from three node successful.\n"
+		if verbose then
+			(printf "\nTwo node remove test:\n";
+			print_tree tree1);
+		for i = 1 to 3 do
+			if verbose then printf "\nRemoving %d from two node...\n" i;
+			let result = D.(tree1 |> import_tree |> remove i |> rep_ok) in
+			if verbose then 
+				(D.(result |> expose_tree |> print_tree);
+				printf "\nRemoving %d from two node successful.\n" i)
+		done;
+		if verbose then
+			(printf "\nThree node remove test:\n";
+			print_tree tree2);
+		for i = 1 to 5 do
+			if verbose then printf "\nRemoving %d from three node...\n" i;
+			let result = D.(tree2 |> import_tree |> remove i |> rep_ok) in
+			if verbose then
+				(D.(result |> expose_tree |> print_tree);
+			 	printf "\nRemoving %d from three node successful.\n" i)
+		done
 
 	let tests =
 		[

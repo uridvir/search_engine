@@ -109,7 +109,7 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
   *)
   let remove k d =
     let d = rep_ok d in
-    List.filter (fun a -> let k1, _ = a in Key.compare k k1 != `EQ) d 
+    List.filter (fun a -> let k1, _ = a in Key.compare k k1 != `EQ) d
 
   (*
   Inserts value v with key k into dictionary d and returns resulting dictionary. First, uses remove function to remove all previous keys bound to k Finally, appends tuple of the key
@@ -131,9 +131,9 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
   of the tuple equals k.
   *)
   let find k d =
-    let d = rep_ok d in 
+    let d = rep_ok d in
     if member k d then
-      let _, v = List.find (fun a -> let k1, _ = a in Key.compare k k1 = `EQ) d in 
+      let _, v = List.find (fun a -> let k1, _ = a in Key.compare k k1 = `EQ) d in
       Some v
     else
       None
@@ -184,8 +184,8 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
     | Threenode {left3 = left; lvalue = _; middle3 = middle; rvalue = _; right3 = right} ->
         List.map (fun a -> a + 1) (all_lengths left @ all_lengths middle @ all_lengths right)
     | Leaf -> [0]
-    
-  let branch t cmp k = 
+
+  let branch t cmp k =
     match t with
     | Leaf -> true
     | Twonode {left2 = _; value = (k1, v1); right2 = _} when Key.compare k1 k = cmp -> true
@@ -213,13 +213,13 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
         raise (TreeException d)
     else
       failwith "Bad tree! Failed all_lengths check"
- 
+
   let empty = Leaf
 
   let is_empty d = let d = rep_ok d in (d = Leaf)
 
   let rec size d =
-    let d = rep_ok d in 
+    let d = rep_ok d in
     match d with
     | Leaf -> 0
     | Twonode {left2 = left; value = _; right2 = right} -> 1 + size left + size right
@@ -249,11 +249,11 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
   let insert_up d =
     match d with
     (*tree is balanced*)
-    | Twonode {left2 = left; value = _; right2 = right} as node when single_length left = single_length right -> 
+    | Twonode {left2 = left; value = _; right2 = right} as node when single_length left = single_length right ->
         node
-    | Threenode {left3 = left; lvalue = _; middle3 = middle; rvalue = _; right3 = right} as node when single_length left = single_length middle && single_length middle = single_length right -> 
+    | Threenode {left3 = left; lvalue = _; middle3 = middle; rvalue = _; right3 = right} as node when single_length left = single_length middle && single_length middle = single_length right ->
         node
-    
+
     (*
      *        x
      *      /   \
@@ -267,7 +267,7 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
     (*
      *     x
      *   /   \
-     * l      w     -->     x w  
+     * l      w     -->     x w
      *      /   \         /  |  \
      *     m     r       l   m   r
      *)
@@ -283,7 +283,7 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
      *)
     | Threenode {left3 = Twonode {left2 = a; value = w; right2 = b} as left; lvalue = x; middle3 = c; rvalue = y; right3 = d} when single_length left = single_length c + 1 && single_length c = single_length d ->
         Twonode {left2 = Twonode {left2 = a; value = w; right2 = b}; value = x; right2 = Twonode {left2 = c; value = y; right2 = d}}
-    
+
     (*
      *    x y                 w
      *  /  |  \             /   \
@@ -293,7 +293,7 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
      *)
     | Threenode {left3 = a; lvalue = x; middle3 = Twonode {left2 = b; value = w; right2 = c} as middle; rvalue = y; right3 = d} when single_length a + 1 = single_length middle && single_length middle = single_length d + 1 ->
         Twonode {left2 = Twonode {left2 = a; value = x; right2 = b}; value = w; right2 = Twonode {left2 = c; value = y; right2 = d}}
-    
+
     (*
      *    x y                   y
      *  /  |  \               /   \
@@ -310,14 +310,14 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
     let sorter a b =
       let k, _ = a and k1, _ = b in
       match Key.compare k k1 with
-      | `LT -> -1 
-      | `EQ -> 0 
+      | `LT -> -1
+      | `EQ -> 0
       | `GT -> 1
     in
     match List.sort sorter [a; b; c] with
     | a :: b :: c :: [] -> (a, b, c)
     | _ -> failwith "Couldn't deconstruct list!"
-  
+
   let rec insert_down k v = function
     (*two node with duplicate key*)
     | Twonode ({left2 = left; value = (k1, v1); right2 = right} as node) when Key.compare k k1 = `EQ ->
@@ -330,9 +330,9 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
         Threenode {node with rvalue = (k, v)}
     (*terminal two node to fill*)
     | Twonode {left2 = Leaf; value = (k1, v1); right2 = Leaf} ->
-        if Key.compare k k1 = `LT then 
+        if Key.compare k k1 = `LT then
           Threenode {left3 = Leaf; lvalue = (k, v); middle3 = Leaf; rvalue = (k1, v1); right3 = Leaf}
-        else 
+        else
           Threenode {left3 = Leaf; lvalue = (k1, v1); middle3 = Leaf; rvalue = (k, v); right3 = Leaf}
     (*terminal three node to fill*)
     | Threenode {left3 = Leaf; lvalue = (k1, v1); middle3 = Leaf; rvalue = (k2, v2); right3 = Leaf} ->
@@ -376,13 +376,15 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
     insert_down k v d
 
   let rec remove_successor = function
-    | Twonode {left2 = Twonode {left2 = Leaf; value = v; right2 = Leaf}; value = w; right2 = Twonode {left2 = Leaf; value = x; right2 = Leaf}} -> 
+    | Twonode {left2 = Leaf; value = v; right2 = Leaf} ->
+        (v, Leaf)
+    | Twonode {left2 = Twonode {left2 = Leaf; value = v; right2 = Leaf}; value = w; right2 = Twonode {left2 = Leaf; value = x; right2 = Leaf}} ->
         (v, insert_up (Threenode {left3 = Leaf; lvalue = w; middle3 = Leaf; rvalue = x; right3 = Leaf}))
     | Threenode {left3 = Leaf; lvalue = v; middle3 = Leaf; rvalue = w; right3 = Leaf} ->
         (v, insert_up (Twonode {left2 = Leaf; value = w; right2 = Leaf}))
-    | Twonode {left2 = left; value = _; right2 = _} -> 
+    | Twonode {left2 = left; value = _; right2 = _} ->
         let (successor, branch) = remove_successor left in (successor, insert_up branch)
-    | Threenode {left3 = left; lvalue = _; middle3 = _; rvalue = _; right3 = _} -> 
+    | Threenode {left3 = left; lvalue = _; middle3 = _; rvalue = _; right3 = _} ->
         let (successor, branch) = remove_successor left in (successor, insert_up branch)
     | d -> raise (TreeException d)
 
@@ -401,12 +403,12 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
         else
           node
     | Twonode ({left2 = left; value = (k1, v1); right2 = right} as node) ->
-        if Key.compare k k1 = `LT then 
+        if Key.compare k k1 = `LT then
           insert_up (Twonode {node with left2 = remove_initial k left})
         else if Key.compare k k1 = `EQ then
           let (successor, branch) = remove_successor right in
           insert_up (Twonode {node with value = successor; right2 = branch})
-        else 
+        else
           insert_up (Twonode {node with right2 = remove_initial k right})
     | Threenode {
         left3 = Twonode {left2 = Leaf; value = (k1, v1) as a; right2 = Leaf};
@@ -426,15 +428,15 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
     | Threenode ({left3 = left; lvalue = (k1, v1); middle3 = middle; rvalue = (k2, v2); right3 = right} as node) ->
         if Key.compare k k1 = `LT then
           insert_up (Threenode {node with left3 = remove_initial k left})
-        else if Key.compare k k1 = `EQ then 
+        else if Key.compare k k1 = `EQ then
           let (successor, branch) = remove_successor middle in
           insert_up (Threenode {node with lvalue = successor; middle3 = branch})
-        else if Key.compare k k2 = `LT then 
+        else if Key.compare k k2 = `LT then
           insert_up (Threenode {node with middle3 = remove_initial k middle})
         else if Key.compare k k2 = `EQ then
           let (successor, branch) = remove_successor right in
           insert_up (Threenode {node with rvalue = successor; right3 = branch})
-        else 
+        else
           insert_up (Threenode {node with right3 = remove_initial k right})
 
   let remove k d =
@@ -460,12 +462,12 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
     let d = rep_ok d in
     match find k d with | Some v -> true | None -> false
 
-  let choose d = 
-    let d = rep_ok d in 
+  let choose d =
+    let d = rep_ok d in
     match d with
     | Twonode {left2 = _; value = (k, v); right2 = _} -> Some (k, v)
     | Threenode {left3 = _; lvalue = (k, v); middle3 = _; rvalue = _; right3 = _} -> Some (k, v)
-    | Leaf -> None 
+    | Leaf -> None
 
   let fold f init d =
     let d = rep_ok d in
