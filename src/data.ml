@@ -80,7 +80,7 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
   exception TreeException of t
   exception ListException of t
 
-  (*Makes sure this dictionary is valid. Is currently IMPROPERLY IMPLEMENTED and performs no checks.*)
+  (*Makes sure this dictionary is valid.*)
   let rec rep_ok = function
     | (h :: t) as d ->
         let (k, _) = h in
@@ -100,7 +100,7 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
 
   (*Runs rep_ok and then returns the number of key-value pairs in the dictionary. It does this by getting the length of the list of tuples.*)
   let size d =
-    let d = rep_ok d in 
+    let d = rep_ok d in
     List.length d
 
   (*

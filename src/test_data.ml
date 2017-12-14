@@ -74,7 +74,7 @@ module DictTester (M: DictionaryMaker) = struct
 		)
 
 	let fold_test _ =
-		let dicts = 
+		let dicts =
 		[
 			D.(empty |> insert foo bar |> insert not_foo not_bar); (*6 characters, key sum 1*)
 			D.(empty |> insert foo not_bar |> insert not_foo bar); (*6 characters, key sum 1*)
@@ -154,7 +154,7 @@ let print_tree d =
 			print_loop "" "" middle;
 			printf "%d\n" k2;
 			print_loop "" "" right
-		| Leaf -> printf "LEAF\n" 
+		| Leaf -> printf "LEAF\n"
 	in
 	printf "\n"; print_start d
 
@@ -177,9 +177,9 @@ module MoreTreeTests = struct
 	let rep_ok_test _ =
 		let badtrees =
 		[
-			Threenode 
+			Threenode
 			{
-				left3 = Twonode 
+				left3 = Twonode
 				{
 					left2 = Twonode {left2 = Leaf; value = (1, ""); right2 = Leaf};
 					value = (2, "");
@@ -197,7 +197,7 @@ module MoreTreeTests = struct
 		(
 		fun t ->
 			try
-				
+
 				if verbose then print_tree t;
 				ignore D.(t |> import_tree |> rep_ok);
 				raise Fine (*this should NOT be thrown, all the trees in this test are invalid*)
@@ -243,14 +243,14 @@ module MoreTreeTests = struct
 			rvalue = (4, "");
 			right3 = Twonode {left2 = Leaf; value = (5, ""); right2 = Leaf};
 		}
-		in 
+		in
 		if verbose then
 			(printf "\nTwo node remove test:\n";
 			print_tree tree1);
 		for i = 1 to 3 do
 			if verbose then printf "\nRemoving %d from two node...\n" i;
 			let result = D.(tree1 |> import_tree |> remove i |> rep_ok) in
-			if verbose then 
+			if verbose then
 				(D.(result |> expose_tree |> print_tree);
 				printf "\nRemoving %d from two node successful.\n" i)
 		done;
