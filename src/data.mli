@@ -146,11 +146,6 @@ module type Dictionary = sig
    * in order from the least key to the greatest. *)
   val to_list : t -> (key * value) list
 
-  (* (This is an extension of the spec.) [import_list l] is
-   * a Dictionary representation of a pre-existing list.
-   * This is useful for debugging and unit testing. *)
-  val import_list : (key * value) list -> t
-
   (* [expose_tree d] is the 2-3 tree representing [d].  It's unusual
    * for a data abstraction to expose its representation like this,
    * but we do it for testing purposes, as described above.
@@ -158,19 +153,31 @@ module type Dictionary = sig
    *   [MakeTreeDictionary]. *)
   val expose_tree : t -> (key, value) tree23
 
-  (* (This is an extension of the spec.) [import_tree t] is
-   * a Dictionary representation of a pre-existing tree.
-   * This is useful for debugging and unit testing. *)
-  val import_tree : (key, value) tree23 -> t
-
-  exception TreeException of t
-  exception ListException of t
-
   (* [format] is a printing function suitable for use
    * with the toplevel's [#install_printer] directive.
    * It outputs a textual representation of a dictionary
    * on the given formatter. *)
   val format : Format.formatter -> t -> unit
+
+  (*The following are extensions to the spec:*)
+
+  (* [import_list l] is a Dictionary representation of a pre-existing
+   * list. This is useful for debugging and unit testing. *)
+  val import_list : (key * value) list -> t
+
+  (* [import_tree t] is a Dictionary representation of a pre-existing
+   * tree. This is useful for debugging and unit testing. *)
+  val import_tree : (key, value) tree23 -> t
+
+  (* ListException is an exception thrown by lists made with
+   * MakeListDictionary when they encounter unexpected
+   * behavior, containing the state of the list for debugging. *)
+  exception ListException of t
+
+  (* TreeException is an exception thrown by trees made with
+   * MakeTreeDictionary when they encounter unexpected
+   * behavior, containing the state of the tree for debugging. *)
+  exception TreeException of t
 end
 
 (* A [DictionaryMaker] is a functor that makes a [Dictionary]

@@ -58,30 +58,35 @@ struct
   let or_not ors nots index =
     (*get all files with or words*)
     let has_ors =
-      S.(List.fold_left (fun init a -> union init (match D.(index |> find a) with | Some files -> files | None -> empty)) empty ors)
+      S.(List.fold_left (fun init a -> union init (match D.(index |> find a) with | Some files -> files
+      | None -> empty)) empty ors)
     in
 
     (*filters out files with not words*)
-    let also_lacks_nots = 
-      S.(List.fold_left (fun init a -> difference init (match D.(index |> find a) with | Some files -> files | None -> empty)) has_ors nots)
-    in 
-    S.(also_lacks_nots |> to_list) 
+    let also_lacks_nots =
+      S.(List.fold_left (fun init a -> difference init (match D.(index |> find a) with | Some files -> files
+      | None -> empty)) has_ors nots)
+    in
+    S.(also_lacks_nots |> to_list)
 
   let and_not ands nots index =
     (*get all files*)
     let files =
-      S.(List.fold_left (fun init a -> union init (match D.(index |> find a) with | Some files -> files | None -> empty)) empty (ands @ nots))
+      S.(List.fold_left (fun init a -> union init (match D.(index |> find a) with | Some files -> files
+      | None -> empty)) empty (ands @ nots))
     in
 
     (*gets all files with all and words*)
     let has_all_ands =
-      S.(List.fold_left (fun init a -> intersect init (match D.(index |> find a) with | Some files -> files | None -> empty)) files ands)
+      S.(List.fold_left (fun init a -> intersect init (match D.(index |> find a) with | Some files -> files
+      | None -> empty)) files ands)
     in
 
-    let also_lacks_nots = 
-      S.(List.fold_left (fun init a -> difference init (match D.(index |> find a) with | Some files -> files | None -> empty)) has_all_ands nots)
+    let also_lacks_nots =
+      S.(List.fold_left (fun init a -> difference init (match D.(index |> find a) with | Some files -> files
+      | None -> empty)) has_all_ands nots)
     in
-    S.(also_lacks_nots |> to_list) 
+    S.(also_lacks_nots |> to_list)
 
   let format fmt idx =
     Format.fprintf fmt "<abstr>" (* TODO: improve if you wish *)
@@ -102,7 +107,7 @@ module StringKey = struct
   let compare a b =
     if String.compare a b < 0 then `LT
     else if String.compare a b = 0 then `EQ
-    else `GT 
+    else `GT
   let format fmt s =
     Format.fprintf fmt "%s" s
 end
