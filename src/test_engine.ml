@@ -19,10 +19,11 @@ module EngineTester (E: Engine) = struct
 
 	let or_not_test _ =
 		let expected = ["helloworld.txt"]
-		and result = E.(index_of_dir sanitized_test_directory |> or_not ["Hello"; "darkness"; "my"; "old"; "friend"] ["foo"; "bar"]) in
+		and result = E.(index_of_dir sanitized_test_directory |> or_not ["Hello"; "darkness"; "my"; "old"; "friend"]
+      ["foo"; "bar"]) in
 		assert (result = expected)
 
-	let tests = 
+	let tests =
 		[
 			"index_of_dir" 	>:: index_of_dir_test;
 			"and_not"		>:: and_not_test;

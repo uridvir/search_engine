@@ -69,12 +69,17 @@ module DictTester (M: DictionaryMaker) = struct
 		assert D.(empty |> insert foo bar |> choose = Some (foo, bar));
 		assert (
 			match D.(empty |> insert foo bar |> insert not_foo not_bar |> choose) with
-			| Some (k, v) -> true (*Good, originally implemented to return first added, if it actually returns Some (not_foo, not_bar), the implementation isn't technically wrong*)
-			| None -> false (*We're screwed*)
+      (*
+      Good, originally implemented to return first added, if it actually returns Some (not_foo, not_bar), the
+      implementation isn't technically wrong
+      *)
+			| Some (k, v) -> true
+      (*We're screwed*)
+			| None -> false
 		)
 
 	let fold_test _ =
-		let dicts = 
+		let dicts =
 		[
 			D.(empty |> insert foo bar |> insert not_foo not_bar); (*6 characters, key sum 1*)
 			D.(empty |> insert foo not_bar |> insert not_foo bar); (*6 characters, key sum 1*)
@@ -90,7 +95,8 @@ module DictTester (M: DictionaryMaker) = struct
 		(*What the HELL is this? A FOR loop? By God, why?*)
 		for i = 0 to 2 do
 			for j = 0 to 2 do
-				if not D.(List.nth dicts i |> fold (List.nth funcs j) 0 = List.nth (List.nth results i) j) then failwith (sprintf "failed on dictionary %d, folder %d" i j)
+				if not D.(List.nth dicts i |> fold (List.nth funcs j) 0 = List.nth (List.nth results i) j) then
+          failwith (sprintf "failed on dictionary %d, folder %d" i j)
 			done
 		done
 
@@ -144,7 +150,7 @@ let print_tree d =
 			print_loop "" "" left;
 			print_loop "" "" middle;
 			print_loop "" "" right
-		| Leaf -> printf "LEAF" 
+		| Leaf -> printf "LEAF"
 	in
 	printf "\n"; print_start d
 
@@ -167,9 +173,9 @@ module MoreTreeTests = struct
 	let rep_ok_test _ =
 		let badtrees =
 		[
-			Threenode 
+			Threenode
 			{
-				left3 = Twonode 
+				left3 = Twonode
 				{
 					left2 = Twonode {left2 = Leaf; value = (1, ""); right2 = Leaf};
 					value = (2, "");
@@ -187,7 +193,7 @@ module MoreTreeTests = struct
 		(
 		fun t ->
 			try
-				
+
 				if verbose then print_tree t;
 				ignore D.(t |> import_tree |> rep_ok);
 				raise Fine (*this should NOT be thrown, all the trees in this test are invalid*)
@@ -233,14 +239,14 @@ module MoreTreeTests = struct
 			rvalue = (4, "");
 			right3 = Twonode {left2 = Leaf; value = (5, ""); right2 = Leaf};
 		}
-		in 
+		in
 		if verbose then
 			(printf "\nTwo node remove test:\n";
 			print_tree tree1);
 		for i = 1 to 3 do
 			if verbose then printf "\nRemoving %d from two node...\n" i;
 			let result = D.(tree1 |> import_tree |> remove i |> rep_ok) in
-			if verbose then 
+			if verbose then
 				(D.(result |> expose_tree |> print_tree);
 				printf "\nRemoving %d from two node successful.\n" i)
 		done;
