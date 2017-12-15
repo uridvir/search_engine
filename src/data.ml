@@ -47,19 +47,25 @@ module type Dictionary = sig
   val choose : t -> (key * value) option
   val fold : (key -> value -> 'acc -> 'acc) -> 'acc -> t -> 'acc
   val to_list : t -> (key * value) list
-  (*Extension to spec:*)
-  val import_list : (key * value) list -> t
   val expose_tree : t -> (key, value) tree23
-  (*Extension to spec:*)
-  val import_tree : (key, value) tree23 -> t
-  exception TreeException of t
-  exception ListException of t
   val format : Format.formatter -> t -> unit
+  (*Extensions to spec:*)
+  val import_list : (key * value) list -> t
+  val import_tree : (key, value) tree23 -> t
+  exception ListException of t
+  exception TreeException of t
 end
 
 module type DictionaryMaker =
   functor (K : Comparable) (V : Formattable)
     -> Dictionary with module Key = K and module Value = V
+
+let sorter f a b =
+  let k, _ = a and k1, _ = b in
+  match f k k1 with
+  | `LT -> -1
+  | `EQ -> 0
+  | `GT -> 1
 
 module MakeListDictionary (K : Comparable) (V : Formattable) = struct
   module Key = K
@@ -79,7 +85,7 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
   exception TreeException of t
   exception ListException of t
 
-  (*Makes sure this dictionary is valid.*)
+  (* Makes sure this dictionary is valid. *)
   let rec rep_ok = function
     | (h :: t) as d ->
         let (k, _) = h in
@@ -91,49 +97,39 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
           failwith "Bad list!"
     | [] -> []
 
-  (*A variable representing an empty list of type t *)
+  (* A variable representing an empty list of type t. *)
   let empty = []
 
-  (*Checks if a dictionary d is empty by comparing to the empty variable.*)
+  (* Checks if a dictionary d is empty by comparing to the empty variable. *)
   let is_empty d = let d = rep_ok d in (d = empty)
 
-  (*
-  Runs rep_ok and then returns the number of key-value pairs in the dictionary. It does this by getting the length of
-  the list of tuples.
-  *)
+  (* Runs rep_ok and then returns the number of key-value pairs in the dictionary. It does this by getting the length
+  of the list of tuples. *)
   let size d =
     let d = rep_ok d in
     List.length d
 
-  (*
-  Removes all values bound to key k from dictionary. The anonymous function checks if the key of 'a' (k1) does not
+  (* Removes all values bound to key k from dictionary. The anonymous function checks if the key of 'a' (k1) does not
   equal k. The filter function returns a new dictionary of only the keys that do NOT equal k (and their associated
-  values).
-  *)
+  values). *)
   let remove k d =
     let d = rep_ok d in
     List.filter (fun a -> let k1, _ = a in Key.compare k k1 != `EQ) d
 
-  (*
-  Inserts value v with key k into dictionary d and returns resulting dictionary. First, uses remove function to remove
-  all previous keys bound to k Finally, appends tuple of the key and value inputted to the dictionary.
-  *)
+  (* Inserts value v with key k into dictionary d and returns resulting dictionary. First, uses remove function to
+  remove all previous keys bound to k Finally, appends tuple of the key and value inputted to the dictionary. *)
   let insert k v d =
     let d = d |> rep_ok |> remove k in
     d @ [(k, v)]
 
-  (*
-  Finds if key k is bound in dictionary. The anonymous function checks if the key of 'a' (k1) equals k. The exists
-  function checks if any pair satisfies the condition.
-  *)
+  (* Finds if key k is bound in dictionary. The anonymous function checks if the key of 'a' (k1) equals k. The exists
+  function checks if any pair satisfies the condition. *)
   let member k d =
     let d = rep_ok d in
     List.exists (fun a -> let k1, _ = a in Key.compare k k1 = `EQ) d
 
-  (*
-  Finds the value bound to the key k in dictionary. First it checks that the key is in the dictionary. If not, it
-  returns None. Otherwise: The anonymous function here checks if the key of the tuple equals k.
-  *)
+  (* Finds the value bound to the key k in dictionary. If k is not bound, it returns [None], otherwise it returns
+  [Some v] where v is bound to k in d. *)
   let find k d =
     let d = rep_ok d in
     if member k d then
@@ -142,18 +138,15 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
     else
       None
 
-  (* Takes in a dictionary, returns the first element if it isn't empty *)
+  (* Takes in a dictionary, returns the first element if it isn't empty. *)
   let choose d =
     let d = rep_ok d in
     if is_empty d then None else Some (List.hd d)
 
-  (*
-  Since d is already an association list, it just sorts it. The anonymous function sorts the keys, and the sort
-  function utilizes the anonymous function to sort the association list.
-  *)
+  (* Since d is already an association list, it just sorts it. *)
   let to_list d =
     let d = rep_ok d in
-    List.sort (fun a b -> let k, _ = a and k1, _ = b in match Key.compare k k1 with | `LT -> -1 | `EQ -> 0 | `GT -> 1) d
+    List.sort (fun a b -> sorter Key.compare a b) d
 
   let import_list l = l
 
@@ -335,14 +328,7 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
 
   (*takes three key-value tuples and sorts them by key, returning a tuple of tuples*)
   let sort_three a b c =
-    let sorter a b =
-      let k, _ = a and k1, _ = b in
-      match Key.compare k k1 with
-      | `LT -> -1
-      | `EQ -> 0
-      | `GT -> 1
-    in
-    match List.sort sorter [a; b; c] with
+    match List.sort (fun a b -> sorter Key.compare a b) [a; b; c] with
     | a :: b :: c :: [] -> (a, b, c)
     | _ -> failwith "Couldn't deconstruct list!"
 

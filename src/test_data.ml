@@ -69,8 +69,13 @@ module DictTester (M: DictionaryMaker) = struct
 		assert D.(empty |> insert foo bar |> choose = Some (foo, bar));
 		assert (
 			match D.(empty |> insert foo bar |> insert not_foo not_bar |> choose) with
-			| Some (k, v) -> true (*Good, originally implemented to return first added, if it actually returns Some (not_foo, not_bar), the implementation isn't technically wrong*)
-			| None -> false (*We're screwed*)
+      (*
+      Good, originally implemented to return first added, if it actually returns Some (not_foo, not_bar), the
+      implementation isn't technically wrong
+      *)
+			| Some (k, v) -> true
+      (*We're screwed*)
+			| None -> false
 		)
 
 	let fold_test _ =
@@ -90,7 +95,8 @@ module DictTester (M: DictionaryMaker) = struct
 		(*What the HELL is this? A FOR loop? By God, why?*)
 		for i = 0 to 2 do
 			for j = 0 to 2 do
-				if not D.(List.nth dicts i |> fold (List.nth funcs j) 0 = List.nth (List.nth results i) j) then failwith (sprintf "failed on dictionary %d, folder %d" i j)
+				if not D.(List.nth dicts i |> fold (List.nth funcs j) 0 = List.nth (List.nth results i) j) then
+          failwith (sprintf "failed on dictionary %d, folder %d" i j)
 			done
 		done
 
