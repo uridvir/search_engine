@@ -76,10 +76,8 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
   (* AF: TODO: document the abstraction function.
    * RI: TODO: document any representation invariants. *)
 
-  (*
-  The dictionary type, essentially an association list (a list of tuples). Each tuple contains a key (of type Key.t),
-  and a value (of type Value.t).
-  *)
+  (* The dictionary type, essentially an association list (a list of tuples). Each tuple contains a key (of type Key.t),
+  and a value (of type Value.t). *)
   type t = (key * value) list
 
   exception TreeException of t
