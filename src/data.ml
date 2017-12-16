@@ -159,7 +159,10 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
     failwith "not a 2-3 tree"
 
   let format fmt d =
-    Format.fprintf fmt "<abstr>" (* TODO: improve if you wish *)
+    let (k, v) = List.hd d in
+    Format.fprintf fmt "\n[(%a, %a)" Key.format k Value.format v;
+    List.iter (fun a -> let (k, v) = a in Format.fprintf fmt ", (%a, %a)" Key.format k Value.format v) (List.tl d);
+    Format.fprintf fmt "]\n"
 
 end
 
@@ -505,10 +508,51 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
 
   let expose_tree d = d
 
-  let import_tree t = rep_ok t
+  let import_tree t = t
 
   let format fmt d =
-    Format.fprintf fmt "<abstr>" (* TODO: improve if you wish *)
+    let rec print_loop prev_indent indent = function
+      | Twonode {left2 = left; value = (k1, v1); right2 = right} ->
+        if indent = "|--" then begin
+          print_loop (prev_indent ^ "|  ") "|  " left;
+          Format.fprintf fmt "%s|--%a\n" (prev_indent ^ indent) Key.format k1;
+          print_loop (prev_indent ^ "|  ") "|  " right;
+        end
+        else begin
+          print_loop (prev_indent ^ indent) "|  " left;
+          Format.fprintf fmt "%s|--%a\n" (prev_indent ^ indent) Key.format k1;
+          print_loop (prev_indent ^ indent) "|  " right;
+        end;
+      | Threenode {left3 = left; lvalue = (k1, v1); middle3 = middle; rvalue = (k2, v2); right3 = right} ->
+        if indent = "|--" then begin
+          print_loop (prev_indent ^ "|  ") "|  " left;
+          Format.fprintf fmt "%s|  %a\n" (prev_indent ^ "|  ") Key.format k1;
+          print_loop (prev_indent ^ indent) "|--" middle;
+          Format.fprintf fmt "%s|  %a\n" (prev_indent ^ "|  ") Key.format k2;
+          print_loop (prev_indent ^ "|  ") "|  " right;
+        end
+        else begin
+          print_loop (prev_indent ^ indent) "|  " left;
+          Format.fprintf fmt "%s|  %a\n" (prev_indent ^ indent) Key.format k1;
+          print_loop (prev_indent ^ indent) "|--" middle;
+          Format.fprintf fmt "%s|  %a\n" (prev_indent ^ indent) Key.format k2;
+          print_loop (prev_indent ^ indent) "|  " right;
+        end;
+      | Leaf -> Format.fprintf fmt "%s|--LEAF\n" (prev_indent ^ indent)
+    in
+    Format.fprintf fmt "\n";
+    match d with
+      | Twonode {left2 = left; value = (k1, v1); right2 = right} ->
+        print_loop "" "" left;
+        Format.fprintf fmt "%a\n" Key.format k1;
+        print_loop "" "" right
+      | Threenode {left3 = left; lvalue = (k1, v1); middle3 = middle; rvalue = (k2, v2); right3 = right} ->
+        print_loop "" "" left;
+        Format.fprintf fmt "%a\n" Key.format k1;
+        print_loop "" "" middle;
+        Format.fprintf fmt "%a\n" Key.format k2;
+        print_loop "" "" right
+      | Leaf -> Format.fprintf fmt "LEAF\n"
 
 end
 
