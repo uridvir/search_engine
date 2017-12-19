@@ -21,7 +21,7 @@ end
 module StringValue = struct
 	type t = string
 	let format fmt s =
-		Format.fprintf fmt "%s" s
+		Format.fprintf fmt "\"%s\"" s
 end
 
 let foo = 0
@@ -34,14 +34,30 @@ let not_bar = "BAR"
 module DictTester (M: DictionaryMaker) = struct
 	module D = M(IntKey)(StringValue)
 
+  let verbose = false
+
 	let empty_test _ =
 		assert D.(empty |> to_list = []);
 		assert D.(is_empty empty)
 
-	let insert_test _ =
-		assert D.(empty |> insert foo bar |> to_list = [(foo, bar)]);
-		assert D.(empty |> insert foo bar |> insert not_foo not_bar |> to_list = [(foo, bar); (not_foo, not_bar)]);
-		assert D.(empty |> insert foo bar |> insert foo not_bar |> to_list = [(foo, not_bar)])
+    let insert_test _ =
+  		let entries = 75 in
+  		let lots_of_nothing = List.init entries (fun _ -> ()) in
+  		Random.self_init ();
+  		try
+  			let folder init _ =
+  				let random = (Random.int 99) + 1 in
+  				if verbose then printf "\nInserting %d...\n" random;
+  				let next = D.(init |> insert random "") in
+  				if verbose then Format.printf "%a" D.format next;
+  				next
+  			in
+  			let result = List.fold_left folder D.empty lots_of_nothing in
+  			if verbose then printf "\nInsert test successful! Inserted %d entries!\n" entries;
+  			assert D.(result |> rep_ok = result)
+  		with
+  		| D.DictionaryException d as e -> Format.printf "%a" D.format d; raise e
+  		| e -> raise e
 
 	let remove_test _ =
 		assert D.(empty |> insert foo bar |> remove foo |> to_list = []);
@@ -124,7 +140,7 @@ module TreeDictionaryTester = DictTester(MakeTreeDictionary)
 module MoreTreeTests = struct
 	module D = MakeTreeDictionary(IntKey)(StringValue)
 
-	let verbose = true
+	let verbose = false
 
 	let type_test _ =
 		assert
@@ -172,24 +188,44 @@ module MoreTreeTests = struct
 		(List.map (fun t -> D.import_tree t) badtrees);
 		if verbose then printf "\nrep_ok test successful!\n"
 
-	let insert_test _ =
-		let entries = 75 in
-		let lots_of_nothing = List.init entries (fun _ -> ()) in
-		Random.self_init ();
-		try
-			let folder init _ =
-				let random = (Random.int 99) + 1 in
-				if verbose then printf "\nInserting %d...\n" random;
-				let next = D.(init |> insert random "") in
-				if verbose then Format.printf "%a" D.format next;
-				next
-			in
-			let result = List.fold_left folder D.empty lots_of_nothing in
-			if verbose then printf "\nInsert test successful! Inserted %d entries!\n" entries;
-			assert D.(result |> rep_ok = result)
-		with
-		| D.TreeException d as e -> Format.printf "%a" D.format d; raise e
-		| e -> raise e
+  let literal_tree d =
+    let open Format in
+    let rec loop indent = function
+      | Leaf -> fprintf str_formatter "Leaf"
+      | Twonode {left2 = left; value = (k, v); right2 = right} ->
+          fprintf str_formatter "Twonode\n";
+          fprintf str_formatter "%s{\n" indent;
+          fprintf str_formatter "%s\tleft2 = " indent;
+            loop (indent ^ "\t") left;
+          fprintf str_formatter ";\n";
+          fprintf str_formatter "%s\tvalue = (%a, %a);\n" indent D.Key.format k D.Value.format v;
+          fprintf str_formatter "%s\tright2 = " indent;
+            loop (indent ^ "\t") right;
+          fprintf str_formatter "\n";
+          fprintf str_formatter "%s}" indent
+      | Threenode {left3 = left; lvalue = (k1, v1); middle3 = middle; rvalue = (k2, v2); right3 = right} ->
+          fprintf str_formatter "Threenode\n";
+          fprintf str_formatter "%s{\n" indent;
+          fprintf str_formatter "%s\tleft3 = " indent;
+            loop (indent ^ "\t") left;
+          fprintf str_formatter ";\n";
+          fprintf str_formatter "%s\tlvalue = (%a, %a);\n" indent D.Key.format k1 D.Value.format v1;
+          fprintf str_formatter "%s\tmiddle3 = " indent;
+            loop (indent ^ "\t") middle;
+          fprintf str_formatter ";\n";
+          fprintf str_formatter "%s\trvalue = (%a, %a);\n" indent D.Key.format k2 D.Value.format v2;
+          fprintf str_formatter "%s\tright3 = " indent;
+            loop (indent ^ "\t") right;
+          fprintf str_formatter "\n";
+          fprintf str_formatter "%s}" indent
+    in loop "" d; flush_str_formatter ()
+
+  let hundred_tree_print _ =
+    let d = List.init 100 (fun a -> a) in
+    let t = D.(List.fold_left (fun init a -> insert a "" init) empty d |> expose_tree) in
+    printf "\n%s\n" (literal_tree t)
+
+  let hundred_tree = Test_trees.hundred_tree
 
 	let remove_test _ =
 		let tree1 = Twonode
@@ -214,9 +250,10 @@ module MoreTreeTests = struct
 		for i = 1 to 3 do
 			if verbose then printf "\nRemoving %d from two node...\n" i;
 			let result = D.(tree1 |> import_tree |> remove i |> rep_ok) in
-			if verbose then
+			if verbose then begin
 				Format.printf "%a" D.format result;
 				printf "\nRemoving %d from two node successful.\n" i
+      end
 		done;
 		if verbose then begin
 			printf "\nThree node remove test:\n";
@@ -225,17 +262,18 @@ module MoreTreeTests = struct
 		for i = 1 to 5 do
 			if verbose then printf "\nRemoving %d from three node...\n" i;
 			let result = D.(tree2 |> import_tree |> remove i |> rep_ok) in
-			if verbose then
+			if verbose then begin
 				Format.printf "%a" D.format result;
 			 	printf "\nRemoving %d from three node successful.\n" i;
+      end
 		done
 
 	let tests =
 		[
 			"type"		>:: type_test;
 			"rep_ok"	>:: rep_ok_test;
-			"insert" 	>:: insert_test;
 			"remove"	>:: remove_test;
+      "hundred_tree" >:: hundred_tree_print;
 		]
 
 end

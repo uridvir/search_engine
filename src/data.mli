@@ -169,15 +169,10 @@ module type Dictionary = sig
    * tree. This is useful for debugging and unit testing. *)
   val import_tree : (key, value) tree23 -> t
 
-  (* ListException is an exception thrown by lists made with
-   * MakeListDictionary when they encounter unexpected
-   * behavior, containing the state of the list for debugging. *)
-  exception ListException of t
-
-  (* TreeException is an exception thrown by trees made with
-   * MakeTreeDictionary when they encounter unexpected
-   * behavior, containing the state of the tree for debugging. *)
-  exception TreeException of t
+  (* DictionaryException is an exception thrown by lists made with
+   * a DictionaryMaker when they encounter unexpected behavior,
+   * containing the state of the list for debugging. *)
+  exception DictionaryException of t
 end
 
 (* A [DictionaryMaker] is a functor that makes a [Dictionary]

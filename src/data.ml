@@ -52,8 +52,7 @@ module type Dictionary = sig
   (*Extensions to spec:*)
   val import_list : (key * value) list -> t
   val import_tree : (key, value) tree23 -> t
-  exception ListException of t
-  exception TreeException of t
+  exception DictionaryException of t
 end
 
 module type DictionaryMaker =
@@ -80,8 +79,7 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
   and a value (of type Value.t). *)
   type t = (key * value) list
 
-  exception TreeException of t
-  exception ListException of t
+  exception DictionaryException of t
 
   (* Makes sure this dictionary is valid. *)
   let rec rep_ok = function
@@ -174,8 +172,7 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
 
   type t = (key, value) tree23
 
-  exception TreeException of t
-  exception ListException of t
+  exception DictionaryException of t
 
   let rec all_lengths = function
     | Twonode {left2 = left; value = _; right2 = right} ->
@@ -244,7 +241,7 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
     if List.for_all (fun a -> (a = first)) rest then
       first
     else
-      raise (TreeException d)
+      raise (DictionaryException d)
 
   let insert_up d =
     match d with
@@ -325,7 +322,7 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
           right2 = Twonode {left2 = c; value = w; right2 = d}
         }
 
-    | d -> Printf.printf "\nFailed to find a case, bad tree:\n"; raise (TreeException d)
+    | d -> Printf.printf "\nFailed to find a case, bad tree:\n"; raise (DictionaryException d)
 
   (*takes three key-value tuples and sorts them by key, returning a tuple of tuples*)
   let sort_three a b c =
@@ -389,8 +386,7 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
     (*"I want to explore your child." Sounds like something a pedophile would say...*)
 
   let insert k v d =
-    let d = rep_ok d in
-    insert_down k v d
+    rep_ok d |> insert_down k v
 
   let rec remove_successor = function
     | Twonode {left2 = Leaf; value = v; right2 = Leaf} ->
@@ -404,7 +400,7 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
         let (successor, branch) = remove_successor left in (successor, insert_up branch)
     | Threenode {left3 = left; lvalue = _; middle3 = _; rvalue = _; right3 = _} ->
         let (successor, branch) = remove_successor left in (successor, insert_up branch)
-    | d -> raise (TreeException d)
+    | d -> raise (DictionaryException d)
 
   let rec remove_initial k = function
     | Leaf -> Leaf
