@@ -1,5 +1,6 @@
 open Data
 
+(* This tree literal was automatically generated with tree_literal *)
 let hundred_tree =
   Threenode
   {

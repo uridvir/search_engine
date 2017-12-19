@@ -29,35 +29,42 @@ let bar = "bar"
 let not_foo = 1
 let not_bar = "BAR"
 
+let verbose = true
+
+module RandomRepeat (D: Dictionary with type Key.t = int and type Value.t = string) = struct
+  let entries = 75
+
+  let folder f msg init _ =
+    let random = (Random.int 99) + 1 in
+    if verbose then msg random;
+    let next = f random init in
+    if verbose then Format.printf "\n%a\n" D.format next;
+    next
+
+  let test f msg =
+    let lots_of_nothing = List.init entries (fun _ -> ()) in
+    Random.self_init ();
+    try
+      let result = List.fold_left (folder f msg) D.empty lots_of_nothing in
+      if verbose then printf "\nTest successful! Repeated for %d entries!\n" entries;
+      assert D.(result |> rep_ok = result)
+    with
+    | D.DictionaryException d as e -> Format.printf "%a" D.format d; raise e
+    | e -> raise e
+end
+
 (* [DictTester] is where you will implement your test harness
  * to find buggy implementations. *)
 module DictTester (M: DictionaryMaker) = struct
 	module D = M(IntKey)(StringValue)
-
-  let verbose = false
+  module R = RandomRepeat(D)
 
 	let empty_test _ =
 		assert D.(empty |> to_list = []);
 		assert D.(is_empty empty)
 
-    let insert_test _ =
-  		let entries = 75 in
-  		let lots_of_nothing = List.init entries (fun _ -> ()) in
-  		Random.self_init ();
-  		try
-  			let folder init _ =
-  				let random = (Random.int 99) + 1 in
-  				if verbose then printf "\nInserting %d...\n" random;
-  				let next = D.(init |> insert random "") in
-  				if verbose then Format.printf "%a" D.format next;
-  				next
-  			in
-  			let result = List.fold_left folder D.empty lots_of_nothing in
-  			if verbose then printf "\nInsert test successful! Inserted %d entries!\n" entries;
-  			assert D.(result |> rep_ok = result)
-  		with
-  		| D.DictionaryException d as e -> Format.printf "%a" D.format d; raise e
-  		| e -> raise e
+  let insert_test _ =
+    R.test (fun a b -> D.insert a "" b) (fun a -> printf "Inserting %d into dictionary..." a)
 
 	let remove_test _ =
 		assert D.(empty |> insert foo bar |> remove foo |> to_list = []);
@@ -139,8 +146,6 @@ module TreeDictionaryTester = DictTester(MakeTreeDictionary)
 
 module MoreTreeTests = struct
 	module D = MakeTreeDictionary(IntKey)(StringValue)
-
-	let verbose = false
 
 	let type_test _ =
 		assert
@@ -227,53 +232,10 @@ module MoreTreeTests = struct
 
   let hundred_tree = Test_trees.hundred_tree
 
-	let remove_test _ =
-		let tree1 = Twonode
-		{
-			left2 = Twonode {left2 = Leaf; value = (1, ""); right2 = Leaf};
-			value = (2, "");
-			right2 = Twonode {left2 = Leaf; value = (3, ""); right2 = Leaf};
-		}
-		and tree2 = Threenode
-		{
-			left3 = Twonode {left2 = Leaf; value = (1, ""); right2 = Leaf};
-			lvalue = (2, "");
-			middle3 = Twonode {left2 = Leaf; value = (3, ""); right2 = Leaf};
-			rvalue = (4, "");
-			right3 = Twonode {left2 = Leaf; value = (5, ""); right2 = Leaf};
-		}
-		in
-		if verbose then begin
-      printf "\nTwo node remove test:\n";
-      tree1 |> D.import_tree |> Format.printf "%a" D.format;
-    end;
-		for i = 1 to 3 do
-			if verbose then printf "\nRemoving %d from two node...\n" i;
-			let result = D.(tree1 |> import_tree |> remove i |> rep_ok) in
-			if verbose then begin
-				Format.printf "%a" D.format result;
-				printf "\nRemoving %d from two node successful.\n" i
-      end
-		done;
-		if verbose then begin
-			printf "\nThree node remove test:\n";
-			tree2 |> D.import_tree |> Format.printf "%a" D.format;
-    end;
-		for i = 1 to 5 do
-			if verbose then printf "\nRemoving %d from three node...\n" i;
-			let result = D.(tree2 |> import_tree |> remove i |> rep_ok) in
-			if verbose then begin
-				Format.printf "%a" D.format result;
-			 	printf "\nRemoving %d from three node successful.\n" i;
-      end
-		done
-
 	let tests =
 		[
 			"type"		>:: type_test;
 			"rep_ok"	>:: rep_ok_test;
-			"remove"	>:: remove_test;
-      "hundred_tree" >:: hundred_tree_print;
 		]
 
 end
