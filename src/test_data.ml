@@ -67,15 +67,18 @@ module DictTester (M: DictionaryMaker) = struct
     R.test (fun a b -> D.insert a "" b) (fun a -> printf "Inserting %d into dictionary..." a)
 
 	let remove_test _ =
-		assert D.(empty |> insert foo bar |> remove foo |> to_list = []);
-		assert D.(empty |> insert foo bar |> remove not_foo |> to_list = [(foo, bar)]);
-		assert D.(empty |> insert foo bar |> insert not_foo not_bar |> remove not_foo |> to_list = [(foo, bar)])
+		R.test (fun a b -> D.remove a b) (fun a -> printf "Removing %d from dictionary..." a)
 
 	let size_test _ =
-		assert D.(empty |> size = 0);
-		assert D.(empty |> insert foo bar |> size = 1);
-		assert D.(empty |> insert foo bar |> insert foo not_bar |> size = 1);
-		assert D.(empty |> insert foo bar |> insert not_foo not_bar |> size = 2)
+    let f a b =
+      let c = D.(insert a "" b) in
+      if D.member a b then
+        assert D.(size c = size b)
+      else
+        assert D.(size c = size b + 1);
+      c
+    in
+		R.test f (fun a -> printf "Checking size after inserting %d" a)
 
 	let member_test _ =
 		assert D.(empty |> member foo = false);
@@ -122,7 +125,6 @@ module DictTester (M: DictionaryMaker) = struct
 		done
 
 	(*TODO: implement general test*)
-	let general_test _ = assert true
 
 	let tests =
 		[

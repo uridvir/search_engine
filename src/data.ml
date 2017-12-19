@@ -157,10 +157,13 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
     failwith "not a 2-3 tree"
 
   let format fmt d =
-    let (k, v) = List.hd d in
-    Format.fprintf fmt "\n[(%a, %a)" Key.format k Value.format v;
-    List.iter (fun a -> let (k, v) = a in Format.fprintf fmt ", (%a, %a)" Key.format k Value.format v) (List.tl d);
-    Format.fprintf fmt "]\n"
+    if d != empty then
+      let (k, v) = List.hd d in
+      Format.fprintf fmt "[(%a, %a)" Key.format k Value.format v;
+      List.iter (fun a -> let (k, v) = a in Format.fprintf fmt ", (%a, %a)" Key.format k Value.format v) (List.tl d);
+      Format.fprintf fmt "]"
+    else
+      Format.fprintf fmt "[]"
 
 end
 
@@ -424,13 +427,9 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
           insert_up (Twonode {node with value = successor; right2 = branch})
         else
           insert_up (Twonode {node with right2 = remove_initial k right})
-    | Threenode {
-        left3 = Twonode {left2 = Leaf; value = (k1, v1) as a; right2 = Leaf};
-        lvalue = x;
-        middle3 = Twonode {left2 = Leaf; value = (k2, v2) as b; right2 = Leaf};
-        rvalue = y;
-        right3 = Twonode {left2 = Leaf; value = (k3, v3) as c; right2 = Leaf};
-      } as node ->
+    | Threenode {left3 = Twonode {left2 = Leaf; value = (k1, v1) as a; right2 = Leaf}; lvalue = x;
+        middle3 = Twonode {left2 = Leaf; value = (k2, v2) as b; right2 = Leaf}; rvalue = y;
+        right3 = Twonode {left2 = Leaf; value = (k3, v3) as c; right2 = Leaf}} as node ->
         if Key.compare k k1 = `EQ then
           Twonode
           {
@@ -627,6 +626,5 @@ module MakeSetOfDictionary (C : Comparable) (DM:DictionaryMaker) = struct
   let difference s1 s2 =
     s1 |> fold (fun x init -> if not (s2 |> member x) then init |> insert x else init) empty
 
-  let format fmt d =
-    Format.fprintf fmt "<abstr>" (* TODO: improve if you wish *)
+  let format fmt d = D.format fmt d
 end
