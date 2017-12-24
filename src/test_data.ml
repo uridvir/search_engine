@@ -66,9 +66,6 @@ module DictTester (M: DictionaryMaker) = struct
   let insert_test _ =
     R.test (fun a b -> D.insert a "" b) D.empty (fun a -> printf "Inserting %d into dictionary..." a)
 
-	let remove_test _ =
-		R.test (fun a b -> D.remove a b) D.empty (fun a -> printf "Removing %d from dictionary..." a)
-
 	let size_test _ =
     let f a b =
       let c = D.(insert a "" b) in
@@ -130,7 +127,6 @@ module DictTester (M: DictionaryMaker) = struct
 		[
 			"empty" 	>:: empty_test;
 			"insert" 	>:: insert_test;
-			"remove" 	>:: remove_test;
 			"size" 		>:: size_test;
 			"member" 	>:: member_test;
 			"find" 		>:: find_test;
@@ -256,6 +252,7 @@ end
 
 module MoreListTests = struct
 	module D = MakeListDictionary(IntKey)(StringValue)
+  module R = RandomRepeat(D)
 
 	let type_test _ =
 		assert
@@ -268,9 +265,21 @@ module MoreListTests = struct
 			| _ -> false
 		)
 
+  let big_list =
+    [(4, ""); (2, ""); (15, ""); (7, ""); (9, ""); (18, ""); (11, ""); (10, ""); (17, ""); (13, ""); (1, ""); (12, "");
+     (19, ""); (16, ""); (8, ""); (14, ""); (3, ""); (5, ""); (6, "")]
+
+  let remove_test _ =
+    if verbose then begin
+      printf "\nBig list:\n";
+      Format.printf "%a\n" D.format D.(import_list big_list);
+    end;
+    R.test (fun a b -> D.remove a b) D.(import_list big_list) (fun a -> printf "\nRemoving %d from dictionary...\n" a)
+
 	let tests =
 		[
-			"type"	>:: type_test;
+			"type"	  >:: type_test;
+      "remove"  >:: remove_test;
 		]
 end
 

@@ -160,7 +160,7 @@ module MakeListDictionary (K : Comparable) (V : Formattable) = struct
     if d != empty then
       let (k, v) = List.hd d in
       Format.fprintf fmt "[(%a, %a)" Key.format k Value.format v;
-      List.iter (fun a -> let (k, v) = a in Format.fprintf fmt ", (%a, %a)" Key.format k Value.format v) (List.tl d);
+      List.iter (fun a -> let (k, v) = a in Format.fprintf fmt "; (%a, %a)" Key.format k Value.format v) (List.tl d);
       Format.fprintf fmt "]"
     else
       Format.fprintf fmt "[]"
