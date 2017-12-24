@@ -177,6 +177,50 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
 
   exception DictionaryException of t
 
+  let format fmt d =
+    let rec print_loop prev_indent indent = function
+      | Twonode {left2 = left; value = (k1, v1); right2 = right} ->
+        if indent = "|--" then begin
+          print_loop (prev_indent ^ "|  ") "|  " left;
+          Format.fprintf fmt "%s|--%a\n" (prev_indent ^ indent) Key.format k1;
+          print_loop (prev_indent ^ "|  ") "|  " right;
+        end
+        else begin
+          print_loop (prev_indent ^ indent) "|  " left;
+          Format.fprintf fmt "%s|--%a\n" (prev_indent ^ indent) Key.format k1;
+          print_loop (prev_indent ^ indent) "|  " right;
+        end;
+      | Threenode {left3 = left; lvalue = (k1, v1); middle3 = middle; rvalue = (k2, v2); right3 = right} ->
+        if indent = "|--" then begin
+          print_loop (prev_indent ^ "|  ") "|  " left;
+          Format.fprintf fmt "%s|  %a\n" (prev_indent ^ "|  ") Key.format k1;
+          print_loop (prev_indent ^ indent) "|--" middle;
+          Format.fprintf fmt "%s|  %a\n" (prev_indent ^ "|  ") Key.format k2;
+          print_loop (prev_indent ^ "|  ") "|  " right;
+        end
+        else begin
+          print_loop (prev_indent ^ indent) "|  " left;
+          Format.fprintf fmt "%s|  %a\n" (prev_indent ^ indent) Key.format k1;
+          print_loop (prev_indent ^ indent) "|--" middle;
+          Format.fprintf fmt "%s|  %a\n" (prev_indent ^ indent) Key.format k2;
+          print_loop (prev_indent ^ indent) "|  " right;
+        end;
+      | Leaf -> Format.fprintf fmt "%s|--LEAF\n" (prev_indent ^ indent)
+    in
+    Format.fprintf fmt "\n";
+    match d with
+      | Twonode {left2 = left; value = (k1, v1); right2 = right} ->
+        print_loop "" "" left;
+        Format.fprintf fmt "%a\n" Key.format k1;
+        print_loop "" "" right
+      | Threenode {left3 = left; lvalue = (k1, v1); middle3 = middle; rvalue = (k2, v2); right3 = right} ->
+        print_loop "" "" left;
+        Format.fprintf fmt "%a\n" Key.format k1;
+        print_loop "" "" middle;
+        Format.fprintf fmt "%a\n" Key.format k2;
+        print_loop "" "" right
+      | Leaf -> Format.fprintf fmt "LEAF\n"
+
   let rec all_lengths = function
     | Twonode {left2 = left; value = _; right2 = right} ->
         List.map (fun a -> a + 1) (all_lengths left @ all_lengths right)
@@ -209,8 +253,10 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
       if order_check d then
         d
       else
+        let _ = Format.printf "\n%a\n" format d in
         failwith "Bad tree! Failed order_check"
     else
+      let _ = Format.printf "\n%a\n" format d in
       failwith "Bad tree! Failed all_lengths check"
 
   let empty = Leaf
@@ -246,8 +292,7 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
     else
       raise (DictionaryException d)
 
-  let insert_up d =
-    match d with
+  let insert_up = function
     (*tree is balanced*)
     | Twonode {left2 = left; value = _; right2 = right} as node when single_length left = single_length right ->
         node
@@ -324,6 +369,8 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
           value = y;
           right2 = Twonode {left2 = c; value = w; right2 = d}
         }
+
+    | Leaf -> Leaf
 
     | d -> Printf.printf "\nFailed to find a case, bad tree:\n"; raise (DictionaryException d)
 
@@ -405,6 +452,175 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
         let (successor, branch) = remove_successor left in (successor, insert_up branch)
     | d -> raise (DictionaryException d)
 
+  let remove_up = function
+  (*
+   *     x   y             x   c
+   *  /    |   \         /   |   \
+   * /    b c   w  -->  /    b    y
+   * |   / | \          |   / \  / \
+   * a  1  2  3         a  1   2 3  w
+   *)
+  | Threenode {left3 = a; lvalue = x; middle3 =
+    Threenode {left3 = one; lvalue = b; middle3 = two; rvalue = c; right3 = three} as middle;
+    rvalue = y; right3 = w} when single_length a = single_length middle && single_length middle =
+    single_length w + 1 ->
+      Threenode
+      {
+        left3 = a;
+        lvalue = x;
+        middle3 = Twonode {left2 = one; value = b; right2 = two};
+        rvalue = c;
+        right3 = Twonode {left2 = three; value = y; right2 = w}
+      }
+
+  (*
+   *        x      y                b     c
+   *     /      |    \           /     |     \
+   *   a b      c     w  -->    a      x      y
+   *  / | \    / \             / \    / \    / \
+   * 1  2  3  4   5           1   2  3   4  5   w
+   *)
+   | Threenode {left3 = Threenode {left3 = one; lvalue = a; middle3 = two; rvalue = b; right3 = three} as left;
+     lvalue = x; middle3 = Twonode {left2 = four; value = c; right2 = five} as middle; rvalue = y; right3 = w}
+     when single_length left = single_length middle && single_length middle = single_length w + 1 ->
+       Threenode
+       {
+         left3 = Twonode {left2 = one; value = a; right2 = two};
+         lvalue = b;
+         middle3 = Twonode {left2 = three; value = x; right2 = four};
+         rvalue = c;
+         right3 = Twonode {left2 = five; value = y; right2 = w}
+       }
+
+  (*
+   *       x   y              b   y
+   *     /   |   \          /   |   \
+   *   a b   w    \  -->   a    x    \
+   *  / | \       |       / \  / \   |
+   * 1  2  3      c       1 2  3 w   c
+   *)
+   | Threenode {left3 = Threenode {left3 = one; lvalue = a; middle3 = two; rvalue = b; right3 = three} as left;
+     lvalue = x; middle3 = w; rvalue = y; right3 = c} when single_length left = single_length c && single_length left =
+     single_length w + 1 ->
+       Threenode
+       {
+         left3 = Twonode {left2 = one; value = a; right2 = two};
+         lvalue = b;
+         middle3 = Twonode {left2 = three; value = x; right2 = w};
+         rvalue = y;
+         right3 = c
+       }
+
+  (*
+   *    x   y               x   b
+   *  /   |   \            /  |   \
+   * /    w   b c    -->  /   y    c
+   * |       / | \        |  / \  / \
+   * a      1  2  3       a  w 1  2 3
+   *)
+   | Threenode {left3 = a; lvalue = x; middle3 = w; rvalue = y;
+     right3 = Threenode {left3 = one; lvalue = b; middle3 = two; rvalue = c; right3 = three} as right}
+     when single_length a = single_length right && single_length right = single_length w + 1 ->
+       Threenode
+       {
+         left3 = a;
+         lvalue = x;
+         middle3 = Twonode {left2 = w; value = y; right2 = one};
+         rvalue = b;
+         right3 = Twonode {left2 = two; value = c; right2 = three}
+       }
+
+  (*
+   *     x    y                  a    y
+   *   /   |     \            /    |    \
+   * w    a b     \  -->    x      b     \
+   *     / | \    |        / \    / \    |
+   *    1  2  3   c       w   1  2   3   c
+   *)
+   | Threenode {left3 = w; lvalue = x; middle3 =
+     Threenode {left3 = one; lvalue = a; middle3 = two; rvalue = b; right3 = three} as middle; rvalue = y; right3 = c}
+     when single_length middle = single_length c && single_length middle = single_length w + 1 ->
+       Threenode
+       {
+         left3 = Twonode {left2 = w; value = x; right2 = one};
+         lvalue = a;
+         middle3 = Twonode {left2 = two; value = b; right2 = three};
+         rvalue = y;
+         right3 = c
+       }
+
+  (*
+   *    x     y                     a    b
+   *  /    |     \               /     |    \
+   * w     a      b c    -->    x      y      c
+   *      / \    / | \         / \    / \    / \
+   *     1   2  3  4  5       w   1  2   3  4   5
+   *)
+   | Threenode {left3 = w; lvalue = x; middle3 = Twonode {left2 = one; value = a; right2 = two} as middle;
+     rvalue = y; right3 = Threenode {left3 = three; lvalue = b; middle3 = four; rvalue = c; right3 = five} as right}
+     when single_length right = single_length middle && single_length middle = single_length w + 1 ->
+       Threenode
+       {
+         left3 = Twonode {left2 = w; value = x; right2 = one};
+         lvalue = a;
+         middle3 = Twonode {left2 = two; value = y; right2 = three};
+         rvalue = b;
+         right3 = Twonode {left2 = four; value = c; right2 = five}
+       }
+
+  (*
+   *    x     y                        y
+   *  /    |     \                 /      \
+   * w     a      b    -->       x a       b
+   *      / \    / \           /  |  \    / \
+   *     1   2  3   4         w   1  2   3   4
+   *)
+  | Threenode {left3 = w; lvalue = x; middle3 = Twonode {left2 = one; value = a; right2 = two} as middle;
+    rvalue = y; right3 = Twonode {left2 = three; value = b; right2 = four} as right} when single_length w + 1 =
+    single_length middle && single_length middle = single_length right ->
+      Twonode
+      {
+        left2 = Threenode {left3 = w; lvalue = x; middle3 = one; rvalue = a; right3 = two};
+        value = y;
+        right2 = Twonode {left2 = three; value = b; right2 = four}
+      }
+
+  (*
+   *      x     y                       y
+   *    /    |    \                 /      \
+   *   a     w     b    -->       a x       b
+   *  / \         / \           /  |  \    / \
+   * 1   2       3   4         1   2   w  3   4
+   *)
+  | Threenode {left3 = Twonode {left2 = one; value = a; right2 = two} as left; lvalue = x;
+    middle3 = w; rvalue = y; right3 = Twonode {left2 = three; value = b; right2 = four} as right}
+    when single_length left = single_length right && single_length left = single_length w + 1 ->
+      Twonode
+      {
+        left2 = Threenode {left3 = one; lvalue = a; middle3 = two; rvalue = x; right3 = w};
+        value = y;
+        right2 = Twonode {left2 = three; value = b; right2 = four}
+      }
+
+  (*
+   *      x     y                 b
+   *    /    |    \            /     \
+   *   a     b     w  -->     a x      y
+   *  / \   / \             /  |  \   / \
+   * 1   2 3   4           1   2   3 4   w
+   *)
+  | Threenode {left3 = Twonode {left2 = one; value = a; right2 = two} as left; lvalue = x;
+    middle3 = Twonode {left2 = three; value = b; right2 = four} as middle; rvalue = y; right3 = w}
+    when single_length left = single_length middle && single_length left = single_length w + 1 ->
+      Twonode
+      {
+        left2 = Threenode {left3 = one; lvalue = a; middle3 = two; rvalue = x; right3 = three};
+        value = b;
+        right2 = Twonode {left2 = four; value = y; right2 = w}
+      }
+
+  | node -> insert_up node
+
   let rec remove_initial k = function
     | Leaf -> Leaf
     | Twonode {left2 = Leaf; value = (k1, v1); right2 = Leaf} as node ->
@@ -421,12 +637,12 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
           node
     | Twonode ({left2 = left; value = (k1, v1); right2 = right} as node) ->
         if Key.compare k k1 = `LT then
-          insert_up (Twonode {node with left2 = remove_initial k left})
+          remove_up (Twonode {node with left2 = remove_initial k left})
         else if Key.compare k k1 = `EQ then
           let (successor, branch) = remove_successor right in
-          insert_up (Twonode {node with value = successor; right2 = branch})
+          remove_up (Twonode {node with value = successor; right2 = branch})
         else
-          insert_up (Twonode {node with right2 = remove_initial k right})
+          remove_up (Twonode {node with right2 = remove_initial k right})
     | Threenode {left3 = Twonode {left2 = Leaf; value = (k1, v1) as a; right2 = Leaf}; lvalue = x;
         middle3 = Twonode {left2 = Leaf; value = (k2, v2) as b; right2 = Leaf}; rvalue = y;
         right3 = Twonode {left2 = Leaf; value = (k3, v3) as c; right2 = Leaf}} as node ->
@@ -455,17 +671,17 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
           node
     | Threenode ({left3 = left; lvalue = (k1, v1); middle3 = middle; rvalue = (k2, v2); right3 = right} as node) ->
         if Key.compare k k1 = `LT then
-          insert_up (Threenode {node with left3 = remove_initial k left})
+          remove_up (Threenode {node with left3 = remove_initial k left})
         else if Key.compare k k1 = `EQ then
           let (successor, branch) = remove_successor middle in
-          insert_up (Threenode {node with lvalue = successor; middle3 = branch})
+          remove_up (Threenode {node with lvalue = successor; middle3 = branch})
         else if Key.compare k k2 = `LT then
-          insert_up (Threenode {node with middle3 = remove_initial k middle})
+          remove_up (Threenode {node with middle3 = remove_initial k middle})
         else if Key.compare k k2 = `EQ then
           let (successor, branch) = remove_successor right in
-          insert_up (Threenode {node with rvalue = successor; right3 = branch})
+          remove_up (Threenode {node with rvalue = successor; right3 = branch})
         else
-          insert_up (Threenode {node with right3 = remove_initial k right})
+          remove_up (Threenode {node with right3 = remove_initial k right})
 
   let remove k d =
     let d = rep_ok d in
@@ -504,51 +720,6 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
   let expose_tree d = d
 
   let import_tree t = t
-
-  let format fmt d =
-    let rec print_loop prev_indent indent = function
-      | Twonode {left2 = left; value = (k1, v1); right2 = right} ->
-        if indent = "|--" then begin
-          print_loop (prev_indent ^ "|  ") "|  " left;
-          Format.fprintf fmt "%s|--%a\n" (prev_indent ^ indent) Key.format k1;
-          print_loop (prev_indent ^ "|  ") "|  " right;
-        end
-        else begin
-          print_loop (prev_indent ^ indent) "|  " left;
-          Format.fprintf fmt "%s|--%a\n" (prev_indent ^ indent) Key.format k1;
-          print_loop (prev_indent ^ indent) "|  " right;
-        end;
-      | Threenode {left3 = left; lvalue = (k1, v1); middle3 = middle; rvalue = (k2, v2); right3 = right} ->
-        if indent = "|--" then begin
-          print_loop (prev_indent ^ "|  ") "|  " left;
-          Format.fprintf fmt "%s|  %a\n" (prev_indent ^ "|  ") Key.format k1;
-          print_loop (prev_indent ^ indent) "|--" middle;
-          Format.fprintf fmt "%s|  %a\n" (prev_indent ^ "|  ") Key.format k2;
-          print_loop (prev_indent ^ "|  ") "|  " right;
-        end
-        else begin
-          print_loop (prev_indent ^ indent) "|  " left;
-          Format.fprintf fmt "%s|  %a\n" (prev_indent ^ indent) Key.format k1;
-          print_loop (prev_indent ^ indent) "|--" middle;
-          Format.fprintf fmt "%s|  %a\n" (prev_indent ^ indent) Key.format k2;
-          print_loop (prev_indent ^ indent) "|  " right;
-        end;
-      | Leaf -> Format.fprintf fmt "%s|--LEAF\n" (prev_indent ^ indent)
-    in
-    Format.fprintf fmt "\n";
-    match d with
-      | Twonode {left2 = left; value = (k1, v1); right2 = right} ->
-        print_loop "" "" left;
-        Format.fprintf fmt "%a\n" Key.format k1;
-        print_loop "" "" right
-      | Threenode {left3 = left; lvalue = (k1, v1); middle3 = middle; rvalue = (k2, v2); right3 = right} ->
-        print_loop "" "" left;
-        Format.fprintf fmt "%a\n" Key.format k1;
-        print_loop "" "" middle;
-        Format.fprintf fmt "%a\n" Key.format k2;
-        print_loop "" "" right
-      | Leaf -> Format.fprintf fmt "LEAF\n"
-
 end
 
 module type Set = sig

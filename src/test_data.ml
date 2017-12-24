@@ -41,11 +41,11 @@ module RandomRepeat (D: Dictionary with type Key.t = int and type Value.t = stri
     if verbose then Format.printf "\n%a\n" D.format next;
     next
 
-  let test f msg =
+  let test f init msg =
     let lots_of_nothing = List.init entries (fun _ -> ()) in
     Random.self_init ();
     try
-      let result = List.fold_left (folder f msg) D.empty lots_of_nothing in
+      let result = List.fold_left (folder f msg) init lots_of_nothing in
       if verbose then printf "\nTest successful! Repeated for %d entries!\n" entries;
       assert D.(result |> rep_ok = result)
     with
@@ -64,10 +64,10 @@ module DictTester (M: DictionaryMaker) = struct
 		assert D.(is_empty empty)
 
   let insert_test _ =
-    R.test (fun a b -> D.insert a "" b) (fun a -> printf "Inserting %d into dictionary..." a)
+    R.test (fun a b -> D.insert a "" b) D.empty (fun a -> printf "Inserting %d into dictionary..." a)
 
 	let remove_test _ =
-		R.test (fun a b -> D.remove a b) (fun a -> printf "Removing %d from dictionary..." a)
+		R.test (fun a b -> D.remove a b) D.empty (fun a -> printf "Removing %d from dictionary..." a)
 
 	let size_test _ =
     let f a b =
@@ -78,7 +78,7 @@ module DictTester (M: DictionaryMaker) = struct
         assert D.(size c = size b + 1);
       c
     in
-		R.test f (fun a -> printf "Checking size after inserting %d" a)
+		R.test f D.empty (fun a -> printf "Checking size after inserting %d" a)
 
 	let member_test _ =
 		assert D.(empty |> member foo = false);
@@ -148,6 +148,7 @@ module TreeDictionaryTester = DictTester(MakeTreeDictionary)
 
 module MoreTreeTests = struct
 	module D = MakeTreeDictionary(IntKey)(StringValue)
+  module R = RandomRepeat(D)
 
 	let type_test _ =
 		assert
@@ -229,15 +230,24 @@ module MoreTreeTests = struct
 
   let hundred_tree_print _ =
     let d = List.init 100 (fun a -> a) in
-    let t = D.(List.fold_left (fun init a -> insert a "" init) empty d |> expose_tree) in
+    let t = D.(List.fold_left (fun init a -> printf "\nInserting %d...\n" a; let d = insert a "" init in Format.printf "\n%a\n" D.format d; d) empty d |> expose_tree) in
     printf "\n%s\n" (literal_tree t)
 
   let hundred_tree = Test_trees.hundred_tree
 
+  let remove_test _ =
+    if verbose then begin
+      printf "\nHundred tree:\n";
+      Format.printf "%a\n" D.format D.(import_tree hundred_tree);
+    end;
+    R.test (fun a b -> D.remove a b) D.(import_tree hundred_tree) (fun a -> printf "\nRemoving %d from dictionary...\n" a)
+
 	let tests =
 		[
-			"type"		>:: type_test;
-			"rep_ok"	>:: rep_ok_test;
+			(*"type"		>:: type_test;
+			"rep_ok"	>:: rep_ok_test;*)
+      "remove"  >:: remove_test;
+      (*"hundred_tree" >:: hundred_tree_print;*)
 		]
 
 end
@@ -262,4 +272,4 @@ module MoreListTests = struct
 		]
 end
 
-let tests = ListDictionaryTester.tests @ TreeDictionaryTester.tests @ MoreTreeTests.tests @ MoreListTests.tests
+let tests = (*ListDictionaryTester.tests @ TreeDictionaryTester.tests @*) MoreTreeTests.tests (*@ MoreListTests.tests*)
