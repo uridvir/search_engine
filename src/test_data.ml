@@ -35,7 +35,7 @@ module RandomRepeat (D: Dictionary with type Key.t = int and type Value.t = stri
   let entries = 75
 
   let folder f msg init _ =
-    let random = (Random.int 99) + 1 in
+    let random = (Random.int 19) + 1 in
     if verbose then msg random;
     let next = f random init in
     if verbose then Format.printf "\n%a\n" D.format next;
@@ -228,12 +228,15 @@ module MoreTreeTests = struct
           fprintf str_formatter "%s}" indent
     in loop "" d; flush_str_formatter ()
 
-  let hundred_tree_print _ =
-    let d = List.init 100 (fun a -> a) in
-    let t = D.(List.fold_left (fun init a -> printf "\nInserting %d...\n" a; let d = insert a "" init in Format.printf "\n%a\n" D.format d; d) empty d |> expose_tree) in
+  let n_tree_print n =
+    let d = List.init n (fun a -> a) in
+    let t = D.(List.fold_left
+      (fun init a -> printf "\nInserting %d...\n" a; let d = insert a "" init in Format.printf "\n%a\n" D.format d; d)
+      empty d |> expose_tree) in
     printf "\n%s\n" (literal_tree t)
 
   let hundred_tree = Test_trees.hundred_tree
+  let twenty_tree = Test_trees.twenty_tree
 
   let remove_test _ =
     if verbose then begin
@@ -244,10 +247,9 @@ module MoreTreeTests = struct
 
 	let tests =
 		[
-			(*"type"		>:: type_test;
-			"rep_ok"	>:: rep_ok_test;*)
+			"type"		>:: type_test;
+			"rep_ok"	>:: rep_ok_test;
       "remove"  >:: remove_test;
-      (*"hundred_tree" >:: hundred_tree_print;*)
 		]
 
 end
@@ -272,4 +274,4 @@ module MoreListTests = struct
 		]
 end
 
-let tests = (*ListDictionaryTester.tests @ TreeDictionaryTester.tests @*) MoreTreeTests.tests (*@ MoreListTests.tests*)
+let tests = ListDictionaryTester.tests @ TreeDictionaryTester.tests @ MoreTreeTests.tests @ MoreListTests.tests

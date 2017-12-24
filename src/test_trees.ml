@@ -494,3 +494,100 @@ let hundred_tree =
                   }
           }
   }
+
+let twenty_tree =
+  Twonode
+  {
+          left2 = Twonode
+          {
+                  left2 = Twonode
+                  {
+                          left2 = Twonode
+                          {
+                                  left2 = Leaf;
+                                  value = (0, "");
+                                  right2 = Leaf
+                          };
+                          value = (1, "");
+                          right2 = Twonode
+                          {
+                                  left2 = Leaf;
+                                  value = (2, "");
+                                  right2 = Leaf
+                          }
+                  };
+                  value = (3, "");
+                  right2 = Twonode
+                  {
+                          left2 = Twonode
+                          {
+                                  left2 = Leaf;
+                                  value = (4, "");
+                                  right2 = Leaf
+                          };
+                          value = (5, "");
+                          right2 = Twonode
+                          {
+                                  left2 = Leaf;
+                                  value = (6, "");
+                                  right2 = Leaf
+                          }
+                  }
+          };
+          value = (7, "");
+          right2 = Threenode
+          {
+                  left3 = Twonode
+                  {
+                          left2 = Twonode
+                          {
+                                  left2 = Leaf;
+                                  value = (8, "");
+                                  right2 = Leaf
+                          };
+                          value = (9, "");
+                          right2 = Twonode
+                          {
+                                  left2 = Leaf;
+                                  value = (10, "");
+                                  right2 = Leaf
+                          }
+                  };
+                  lvalue = (11, "");
+                  middle3 = Twonode
+                  {
+                          left2 = Twonode
+                          {
+                                  left2 = Leaf;
+                                  value = (12, "");
+                                  right2 = Leaf
+                          };
+                          value = (13, "");
+                          right2 = Twonode
+                          {
+                                  left2 = Leaf;
+                                  value = (14, "");
+                                  right2 = Leaf
+                          }
+                  };
+                  rvalue = (15, "");
+                  right3 = Twonode
+                  {
+                          left2 = Twonode
+                          {
+                                  left2 = Leaf;
+                                  value = (16, "");
+                                  right2 = Leaf
+                          };
+                          value = (17, "");
+                          right2 = Threenode
+                          {
+                                  left3 = Leaf;
+                                  lvalue = (18, "");
+                                  middle3 = Leaf;
+                                  rvalue = (19, "");
+                                  right3 = Leaf
+                          }
+                  }
+          }
+  }

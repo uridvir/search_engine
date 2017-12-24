@@ -438,188 +438,221 @@ module MakeTreeDictionary (K : Comparable) (V : Formattable) = struct
   let insert k v d =
     rep_ok d |> insert_down k v
 
+  let remove_up = function
+    (*
+     *       x               b
+     *     /   \           /   \
+     *   a b    w  -->    a     x
+     *  / | \            / \   / \
+     * 1  2  3          1   2 3   w
+     *)
+    | Twonode {left2 = Threenode {left3 = one; lvalue = a; middle3 = two; rvalue = b; right3 = three} as left;
+      value = x; right2 = w} when single_length left = single_length w + 1 ->
+        Twonode
+        {
+          left2 = Twonode {left2 = one; value = a; right2 = two};
+          value = b;
+          right2 = Twonode {left2 = three; value = x; right2 = w};
+        }
+
+     (*
+      *    x                  a
+      *  /   \              /   \
+      * w    a b    -->    x     b
+      *     / | \         / \   / \
+      *    1  2  3       w   1 2   3
+      *)
+     | Twonode {left2 = w; value = x; right2 =
+       Threenode {left3 = one; lvalue = a; middle3 = two; rvalue = b; right3 = three} as right}
+       when single_length right = single_length w + 1 ->
+         Twonode
+         {
+           left2 = Twonode {left2 = w; value = x; right2 = one};
+           value = a;
+           right2 = Twonode {left2 = two; value = b; right2 = three};
+         }
+
+    (*
+     *     x   y             x   c
+     *  /    |   \         /   |   \
+     * /    b c   w  -->  /    b    y
+     * |   / | \          |   / \  / \
+     * a  1  2  3         a  1   2 3  w
+     *)
+    | Threenode {left3 = a; lvalue = x; middle3 =
+      Threenode {left3 = one; lvalue = b; middle3 = two; rvalue = c; right3 = three} as middle;
+      rvalue = y; right3 = w} when single_length a = single_length middle && single_length middle =
+      single_length w + 1 ->
+        Threenode
+        {
+          left3 = a;
+          lvalue = x;
+          middle3 = Twonode {left2 = one; value = b; right2 = two};
+          rvalue = c;
+          right3 = Twonode {left2 = three; value = y; right2 = w}
+        }
+
+     (*
+      *        x      y                b     c
+      *     /      |    \           /     |     \
+      *   a b      c     w  -->    a      x      y
+      *  / | \    / \             / \    / \    / \
+      * 1  2  3  4   5           1   2  3   4  5   w
+      *)
+     | Threenode {left3 = Threenode {left3 = one; lvalue = a; middle3 = two; rvalue = b; right3 = three} as left;
+       lvalue = x; middle3 = Twonode {left2 = four; value = c; right2 = five} as middle; rvalue = y; right3 = w}
+       when single_length left = single_length middle && single_length middle = single_length w + 1 ->
+         Threenode
+         {
+           left3 = Twonode {left2 = one; value = a; right2 = two};
+           lvalue = b;
+           middle3 = Twonode {left2 = three; value = x; right2 = four};
+           rvalue = c;
+           right3 = Twonode {left2 = five; value = y; right2 = w}
+         }
+
+    (*
+     *       x   y              b   y
+     *     /   |   \          /   |   \
+     *   a b   w    \  -->   a    x    \
+     *  / | \       |       / \  / \   |
+     * 1  2  3      c       1 2  3 w   c
+     *)
+     | Threenode {left3 = Threenode {left3 = one; lvalue = a; middle3 = two; rvalue = b; right3 = three} as left;
+       lvalue = x; middle3 = w; rvalue = y; right3 = c} when single_length left = single_length c &&
+       single_length left = single_length w + 1 ->
+         Threenode
+         {
+           left3 = Twonode {left2 = one; value = a; right2 = two};
+           lvalue = b;
+           middle3 = Twonode {left2 = three; value = x; right2 = w};
+           rvalue = y;
+           right3 = c
+         }
+
+    (*
+     *    x   y               x   b
+     *  /   |   \            /  |   \
+     * /    w   b c    -->  /   y    c
+     * |       / | \        |  / \  / \
+     * a      1  2  3       a  w 1  2 3
+     *)
+     | Threenode {left3 = a; lvalue = x; middle3 = w; rvalue = y;
+       right3 = Threenode {left3 = one; lvalue = b; middle3 = two; rvalue = c; right3 = three} as right}
+       when single_length a = single_length right && single_length right = single_length w + 1 ->
+         Threenode
+         {
+           left3 = a;
+           lvalue = x;
+           middle3 = Twonode {left2 = w; value = y; right2 = one};
+           rvalue = b;
+           right3 = Twonode {left2 = two; value = c; right2 = three}
+         }
+
+    (*
+     *     x    y                  a    y
+     *   /   |     \            /    |    \
+     * w    a b     \  -->    x      b     \
+     *     / | \    |        / \    / \    |
+     *    1  2  3   c       w   1  2   3   c
+     *)
+     | Threenode {left3 = w; lvalue = x; middle3 =
+       Threenode {left3 = one; lvalue = a; middle3 = two; rvalue = b; right3 = three} as middle; rvalue = y;
+       right3 = c} when single_length middle = single_length c && single_length middle = single_length w + 1 ->
+         Threenode
+         {
+           left3 = Twonode {left2 = w; value = x; right2 = one};
+           lvalue = a;
+           middle3 = Twonode {left2 = two; value = b; right2 = three};
+           rvalue = y;
+           right3 = c
+         }
+
+    (*
+     *    x     y                     a    b
+     *  /    |     \               /     |    \
+     * w     a      b c    -->    x      y      c
+     *      / \    / | \         / \    / \    / \
+     *     1   2  3  4  5       w   1  2   3  4   5
+     *)
+     | Threenode {left3 = w; lvalue = x; middle3 = Twonode {left2 = one; value = a; right2 = two} as middle;
+       rvalue = y; right3 = Threenode {left3 = three; lvalue = b; middle3 = four; rvalue = c; right3 = five} as right}
+       when single_length right = single_length middle && single_length middle = single_length w + 1 ->
+         Threenode
+         {
+           left3 = Twonode {left2 = w; value = x; right2 = one};
+           lvalue = a;
+           middle3 = Twonode {left2 = two; value = y; right2 = three};
+           rvalue = b;
+           right3 = Twonode {left2 = four; value = c; right2 = five}
+         }
+
+    (*
+     *    x     y                        y
+     *  /    |     \                 /      \
+     * w     a      b    -->       x a       b
+     *      / \    / \           /  |  \    / \
+     *     1   2  3   4         w   1  2   3   4
+     *)
+    | Threenode {left3 = w; lvalue = x; middle3 = Twonode {left2 = one; value = a; right2 = two} as middle;
+      rvalue = y; right3 = Twonode {left2 = three; value = b; right2 = four} as right}
+      when single_length w + 1 = single_length middle && single_length middle = single_length right ->
+        Twonode
+        {
+          left2 = Threenode {left3 = w; lvalue = x; middle3 = one; rvalue = a; right3 = two};
+          value = y;
+          right2 = Twonode {left2 = three; value = b; right2 = four}
+        }
+
+    (*
+     *      x     y                       y
+     *    /    |    \                 /      \
+     *   a     w     b    -->       a x       b
+     *  / \         / \           /  |  \    / \
+     * 1   2       3   4         1   2   w  3   4
+     *)
+    | Threenode {left3 = Twonode {left2 = one; value = a; right2 = two} as left; lvalue = x;
+      middle3 = w; rvalue = y; right3 = Twonode {left2 = three; value = b; right2 = four} as right}
+      when single_length left = single_length right && single_length left = single_length w + 1 ->
+        Twonode
+        {
+          left2 = Threenode {left3 = one; lvalue = a; middle3 = two; rvalue = x; right3 = w};
+          value = y;
+          right2 = Twonode {left2 = three; value = b; right2 = four}
+        }
+
+    (*
+     *      x     y                 b
+     *    /    |    \            /     \
+     *   a     b     w  -->     a x      y
+     *  / \   / \             /  |  \   / \
+     * 1   2 3   4           1   2   3 4   w
+     *)
+    | Threenode {left3 = Twonode {left2 = one; value = a; right2 = two} as left; lvalue = x;
+      middle3 = Twonode {left2 = three; value = b; right2 = four} as middle; rvalue = y; right3 = w}
+      when single_length left = single_length middle && single_length left = single_length w + 1 ->
+        Twonode
+        {
+          left2 = Threenode {left3 = one; lvalue = a; middle3 = two; rvalue = x; right3 = three};
+          value = b;
+          right2 = Twonode {left2 = four; value = y; right2 = w}
+        }
+
+    | node -> insert_up node
+
   let rec remove_successor = function
     | Twonode {left2 = Leaf; value = v; right2 = Leaf} ->
         (v, Leaf)
     | Twonode {left2 = Twonode {left2 = Leaf; value = v; right2 = Leaf}; value = w; right2 =
       Twonode {left2 = Leaf; value = x; right2 = Leaf}} ->
-        (v, insert_up (Threenode {left3 = Leaf; lvalue = w; middle3 = Leaf; rvalue = x; right3 = Leaf}))
+        (v, remove_up (Threenode {left3 = Leaf; lvalue = w; middle3 = Leaf; rvalue = x; right3 = Leaf}))
     | Threenode {left3 = Leaf; lvalue = v; middle3 = Leaf; rvalue = w; right3 = Leaf} ->
-        (v, insert_up (Twonode {left2 = Leaf; value = w; right2 = Leaf}))
-    | Twonode {left2 = left; value = _; right2 = _} ->
-        let (successor, branch) = remove_successor left in (successor, insert_up branch)
-    | Threenode {left3 = left; lvalue = _; middle3 = _; rvalue = _; right3 = _} ->
-        let (successor, branch) = remove_successor left in (successor, insert_up branch)
+        (v, remove_up (Twonode {left2 = Leaf; value = w; right2 = Leaf}))
+    | Twonode ({left2 = left; value = _; right2 = _} as node) ->
+        let (successor, branch) = remove_successor left in (successor, remove_up (Twonode {node with left2 = branch}))
+    | Threenode ({left3 = left; lvalue = _; middle3 = _; rvalue = _; right3 = _} as node) ->
+        let (successor, branch) = remove_successor left in (successor, remove_up (Threenode {node with left3 = branch}))
     | d -> raise (DictionaryException d)
-
-  let remove_up = function
-  (*
-   *     x   y             x   c
-   *  /    |   \         /   |   \
-   * /    b c   w  -->  /    b    y
-   * |   / | \          |   / \  / \
-   * a  1  2  3         a  1   2 3  w
-   *)
-  | Threenode {left3 = a; lvalue = x; middle3 =
-    Threenode {left3 = one; lvalue = b; middle3 = two; rvalue = c; right3 = three} as middle;
-    rvalue = y; right3 = w} when single_length a = single_length middle && single_length middle =
-    single_length w + 1 ->
-      Threenode
-      {
-        left3 = a;
-        lvalue = x;
-        middle3 = Twonode {left2 = one; value = b; right2 = two};
-        rvalue = c;
-        right3 = Twonode {left2 = three; value = y; right2 = w}
-      }
-
-  (*
-   *        x      y                b     c
-   *     /      |    \           /     |     \
-   *   a b      c     w  -->    a      x      y
-   *  / | \    / \             / \    / \    / \
-   * 1  2  3  4   5           1   2  3   4  5   w
-   *)
-   | Threenode {left3 = Threenode {left3 = one; lvalue = a; middle3 = two; rvalue = b; right3 = three} as left;
-     lvalue = x; middle3 = Twonode {left2 = four; value = c; right2 = five} as middle; rvalue = y; right3 = w}
-     when single_length left = single_length middle && single_length middle = single_length w + 1 ->
-       Threenode
-       {
-         left3 = Twonode {left2 = one; value = a; right2 = two};
-         lvalue = b;
-         middle3 = Twonode {left2 = three; value = x; right2 = four};
-         rvalue = c;
-         right3 = Twonode {left2 = five; value = y; right2 = w}
-       }
-
-  (*
-   *       x   y              b   y
-   *     /   |   \          /   |   \
-   *   a b   w    \  -->   a    x    \
-   *  / | \       |       / \  / \   |
-   * 1  2  3      c       1 2  3 w   c
-   *)
-   | Threenode {left3 = Threenode {left3 = one; lvalue = a; middle3 = two; rvalue = b; right3 = three} as left;
-     lvalue = x; middle3 = w; rvalue = y; right3 = c} when single_length left = single_length c && single_length left =
-     single_length w + 1 ->
-       Threenode
-       {
-         left3 = Twonode {left2 = one; value = a; right2 = two};
-         lvalue = b;
-         middle3 = Twonode {left2 = three; value = x; right2 = w};
-         rvalue = y;
-         right3 = c
-       }
-
-  (*
-   *    x   y               x   b
-   *  /   |   \            /  |   \
-   * /    w   b c    -->  /   y    c
-   * |       / | \        |  / \  / \
-   * a      1  2  3       a  w 1  2 3
-   *)
-   | Threenode {left3 = a; lvalue = x; middle3 = w; rvalue = y;
-     right3 = Threenode {left3 = one; lvalue = b; middle3 = two; rvalue = c; right3 = three} as right}
-     when single_length a = single_length right && single_length right = single_length w + 1 ->
-       Threenode
-       {
-         left3 = a;
-         lvalue = x;
-         middle3 = Twonode {left2 = w; value = y; right2 = one};
-         rvalue = b;
-         right3 = Twonode {left2 = two; value = c; right2 = three}
-       }
-
-  (*
-   *     x    y                  a    y
-   *   /   |     \            /    |    \
-   * w    a b     \  -->    x      b     \
-   *     / | \    |        / \    / \    |
-   *    1  2  3   c       w   1  2   3   c
-   *)
-   | Threenode {left3 = w; lvalue = x; middle3 =
-     Threenode {left3 = one; lvalue = a; middle3 = two; rvalue = b; right3 = three} as middle; rvalue = y; right3 = c}
-     when single_length middle = single_length c && single_length middle = single_length w + 1 ->
-       Threenode
-       {
-         left3 = Twonode {left2 = w; value = x; right2 = one};
-         lvalue = a;
-         middle3 = Twonode {left2 = two; value = b; right2 = three};
-         rvalue = y;
-         right3 = c
-       }
-
-  (*
-   *    x     y                     a    b
-   *  /    |     \               /     |    \
-   * w     a      b c    -->    x      y      c
-   *      / \    / | \         / \    / \    / \
-   *     1   2  3  4  5       w   1  2   3  4   5
-   *)
-   | Threenode {left3 = w; lvalue = x; middle3 = Twonode {left2 = one; value = a; right2 = two} as middle;
-     rvalue = y; right3 = Threenode {left3 = three; lvalue = b; middle3 = four; rvalue = c; right3 = five} as right}
-     when single_length right = single_length middle && single_length middle = single_length w + 1 ->
-       Threenode
-       {
-         left3 = Twonode {left2 = w; value = x; right2 = one};
-         lvalue = a;
-         middle3 = Twonode {left2 = two; value = y; right2 = three};
-         rvalue = b;
-         right3 = Twonode {left2 = four; value = c; right2 = five}
-       }
-
-  (*
-   *    x     y                        y
-   *  /    |     \                 /      \
-   * w     a      b    -->       x a       b
-   *      / \    / \           /  |  \    / \
-   *     1   2  3   4         w   1  2   3   4
-   *)
-  | Threenode {left3 = w; lvalue = x; middle3 = Twonode {left2 = one; value = a; right2 = two} as middle;
-    rvalue = y; right3 = Twonode {left2 = three; value = b; right2 = four} as right} when single_length w + 1 =
-    single_length middle && single_length middle = single_length right ->
-      Twonode
-      {
-        left2 = Threenode {left3 = w; lvalue = x; middle3 = one; rvalue = a; right3 = two};
-        value = y;
-        right2 = Twonode {left2 = three; value = b; right2 = four}
-      }
-
-  (*
-   *      x     y                       y
-   *    /    |    \                 /      \
-   *   a     w     b    -->       a x       b
-   *  / \         / \           /  |  \    / \
-   * 1   2       3   4         1   2   w  3   4
-   *)
-  | Threenode {left3 = Twonode {left2 = one; value = a; right2 = two} as left; lvalue = x;
-    middle3 = w; rvalue = y; right3 = Twonode {left2 = three; value = b; right2 = four} as right}
-    when single_length left = single_length right && single_length left = single_length w + 1 ->
-      Twonode
-      {
-        left2 = Threenode {left3 = one; lvalue = a; middle3 = two; rvalue = x; right3 = w};
-        value = y;
-        right2 = Twonode {left2 = three; value = b; right2 = four}
-      }
-
-  (*
-   *      x     y                 b
-   *    /    |    \            /     \
-   *   a     b     w  -->     a x      y
-   *  / \   / \             /  |  \   / \
-   * 1   2 3   4           1   2   3 4   w
-   *)
-  | Threenode {left3 = Twonode {left2 = one; value = a; right2 = two} as left; lvalue = x;
-    middle3 = Twonode {left2 = three; value = b; right2 = four} as middle; rvalue = y; right3 = w}
-    when single_length left = single_length middle && single_length left = single_length w + 1 ->
-      Twonode
-      {
-        left2 = Threenode {left3 = one; lvalue = a; middle3 = two; rvalue = x; right3 = three};
-        value = b;
-        right2 = Twonode {left2 = four; value = y; right2 = w}
-      }
-
-  | node -> insert_up node
 
   let rec remove_initial k = function
     | Leaf -> Leaf
